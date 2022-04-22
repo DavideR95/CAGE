@@ -2,10 +2,11 @@ cmake_minimum_required(VERSION 3.5)
 
 project(graphlet)
 
+set(EXECUTABLE_OUTPUT_PATH  ${PROJECT_SOURCE_DIR}/build/)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -pg -g -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -pg -g -O3")
 
 add_subdirectory(third_party/abseil-cpp)
 #add_subdirectory(third_party/gflags)
