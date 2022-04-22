@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -shared-intel")
 
 include_directories(/opt/intel/oneapi/vtune/latest/sdk/include)
-link_directories(/opt/intel/oneapi/vtune/latest/sdk/lib32)
+# link_directories(/opt/intel/oneapi/vtune/latest/sdk/lib32)
 link_directories(/opt/intel/oneapi/vtune/latest/sdk/lib64)
 
 
