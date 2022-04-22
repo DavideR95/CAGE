@@ -71,141 +71,9 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
     auto end = N_of_S.size();
     bool found = false;
 
-    if(S->size() == k-3) {
-        // std::ofstream f("../../out_ultra.txt", std::ios::out);
-        uint64_t diff = 0;
-        auto neighbors = N_of_S.size() - start;
-
-        // Caso 1: 3 nodi a distanza 1
-        diff += (neighbors * (neighbors - 1) * (neighbors - 2)) / 6; // Se ci sono 1 o 2 neighbors fa zero e va bene
-        // std::cout << "I neighbor sono " << neighbors << " per cui diff = " << diff << std::endl;
-        
-        auto diff1 = diff;
-        // Caso 2: un nodo a distanza 1 e due a distanza 2:
-        // std::unordered_set<node_t> n_quadro_S;
-        // n_quadro_S.reserve(150);
-
-        for(int i=start;i<end;i++) {
-            auto u = N_of_S[i];
-            //std::cout << "neigh " << u << std::endl;
-            uint64_t deg_u = 0;
-            // std::cout << "u = " << u << std::endl;
-            for(auto& neigh : graph->neighs(u)) {
-                if(!in_C[neigh] && !excluded[neigh] &&/*!graph->is_in_S(neigh)*/!in_S[neigh]) {
-                    deg_u++;
-                    // std::cout << neigh << " è vicino di u = " << u << std::endl;
-                    // n_quadro_S.insert(neigh);
-                }
-            }
-            diff += (deg_u * (deg_u-1)) / 2;
-        }
-        auto diff2 = diff - diff1;
-        //std::cout << "Col metodo 2 ne ho trovati altri " << diff2 << std::endl;
-
-
-
-        // Caso 3: due nodi a distanza 1 e uno a distanza 2:
-        if(neighbors > 1) {
-            uint64_t contatore = 0;
-            for(int i=start;i<end;i++) {
-                auto u = N_of_S[i];
-                for(int j=start;j<end;j++) {
-                    auto v = N_of_S[j];
-                    // assert(!n_quadro_S.count(v) && !n_quadro_S.count(u));
-                    if(u != v) {
-                        for(auto& neigh : graph->neighs(v)) {
-                            if(neigh != u && !in_C[neigh] && !excluded[neigh] && /*!graph->is_in_S(neigh)*/!in_S[neigh]) {
-                                contatore++;
-                            }
-                        }
-                        for(auto& neigh : graph->neighs(u)) {
-                            if(neigh != v && !in_C[neigh] && !excluded[neigh] && /*!graph->is_in_S(neigh)*/!in_S[neigh] && !graph->are_neighs(v, neigh)) {
-                                contatore++;
-                            }
-                        }
-                    }
-                }
-            }
-            diff += contatore / 2;
-        }
-        auto diff3 = diff - diff2 - diff1;
-        //std::cout << "Col metodo 3 ne ho trovati altri " << diff3 << std::endl;
-
-        // Caso 4: uno + uno + uno
-        for(int i=start;i<end;i++) {
-            auto u = N_of_S[i]; // Scelgo u
-            //std::cout << "Vedo u che è: " << u << std::endl;
-            for(auto& v : graph->neighs(u)) {
-                if(!in_C[v] && !excluded[v] && /*!graph->is_in_S(v)*/!in_S[v] /*&& n_quadro_S.count(v)*/) { // Scelgo v
-                    //std::cout << "Poi vedo v che è " << v << std::endl;
-                    // assert(n_quadro_S.count(v));
-                    for(auto& neigh : graph->neighs(v)) {
-                        if(!in_C[neigh] && !excluded[neigh] && /*!graph->is_in_S(neigh)*/!in_S[neigh] && !graph->are_neighs(u, neigh) /*&& !n_quadro_S.count(neigh)*/) {
-                            diff++;
-                        }
-                    }
-                }
-            }
-        }
-
-        auto diff4 = diff - diff3 - diff2 - diff1;
-        //std::cout << "Col metodo 4 ne ho trovati altri " << diff4 << std::endl;
-
-        solutions += diff;
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
-        else if(diff == min_sol_per_leaf) count_min_leaf++;
-        if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
-        else if(diff == max_sol_per_leaf) count_max_leaf++;
-
-        leaves++;
-        if(diff > 0) fruitful_leaves++;
-        // f.close();
-        return (diff > 0);
-    }
-
-    if(S->size() == k-2) {
-        auto neighbors = N_of_S.size() - start;
-        uint64_t diff = 0;
-
-        if(neighbors == 1) {
-            for(auto& neigh : graph->neighs(N_of_S[start])) {
-                if(!in_C[neigh] && !excluded[neigh] && /*!graph->is_in_S(neigh)*/!in_S[neigh]) {
-                    diff++;
-                }
-            }
-        }
-        else {
-            diff = (neighbors) * (neighbors - 1) / 2; // Questi sono quelli che posso fare a distanza 1
-            
-            assert(neighbors > 1);
-
-            // qui devo ciclare tra i k-1 
-
-            for(int i=start;i<end;i++) {
-                auto u = N_of_S[i];
-                for(auto& neigh : graph->neighs(u)) {
-                    if(!in_C[neigh] && !excluded[neigh] && /*!graph->is_in_S(neigh)*/!in_S[neigh]) {
-                        diff++;
-                    }
-                }
-            }
-        } 
-
+    if(S->size() == k-1) {
+        auto diff = N_of_S.size() - start;
         solutions += diff; 
-        //assert(diff != 0);
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
-        else if(diff == min_sol_per_leaf) count_min_leaf++;
-        if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
-        else if(diff == max_sol_per_leaf) count_max_leaf++;
-
-        leaves++;
-        if(diff > 0) fruitful_leaves++;
-        return (diff > 0);
-    } 
-
-    /* if(S->size() == k-1) {
-        auto diff = C_of_S.size() - start;
-        counter += diff; 
         
         if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
         else if(diff == min_sol_per_leaf) count_min_leaf++;
@@ -220,9 +88,9 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         // }
         
         leaves++;
-        fruitful_leaves++;
-        return true;
-    } */
+        if(diff > 0) fruitful_leaves++;
+        return diff > 0;
+    } 
 
     bool im_a_parent = false;
 
