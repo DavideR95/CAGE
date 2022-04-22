@@ -203,27 +203,6 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         return (diff > 0);
     } 
 
-    /* if(S->size() == k-1) {
-        auto diff = C_of_S.size() - start;
-        counter += diff; 
-        
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
-        else if(diff == min_sol_per_leaf) count_min_leaf++;
-        if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
-        else if(diff == max_sol_per_leaf) count_max_leaf++;
-
-        // std::cout << "Trovati graphlet: "; 
-        // for(int i=start;i<C_of_S.size();i++) {
-        //     auto neigh = C_of_S[i];
-        //     for(auto& v : *S) std::cout << v << " ";
-        //     std::cout << neigh << std::endl;
-        // }
-        
-        leaves++;
-        fruitful_leaves++;
-        return true;
-    } */
-
     bool im_a_parent = false;
 
     for(;start < end; start++) {
