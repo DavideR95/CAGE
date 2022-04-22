@@ -135,7 +135,7 @@ class graph_t {
   graph_t() {}  // For deserialization
 
   graph_t(node_t N, const edges_t& edg, const labels_t& lbl)
-      : N_(N), edges_(N), nodes_(N), labels_(lbl) {
+      : N_(N), edges_(N), /*nodes_(N),*/ labels_(lbl) {
     for (node_t i = 0; i < N; i++) {
       edges_[i].init(edg[i]);
       /*nodes_[i].index = i;
