@@ -227,16 +227,16 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         if(start+1 < end+tmp) {
             // Chiamata sx
             S->push_back(v); 
-            in_S[v] = true;
-            // graph->put_in_S(v);
+            // in_S[v] = true;
+            graph->put_in_S(v);
             
             left = enhanced(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
             S->pop_back();
-            in_S[v] = false;
-            // graph->remove_from_S(v);
+            // in_S[v] = false;
+            graph->remove_from_S(v);
             // excluded[v] = true;
             // std::cout << "Ora tolgo " << v << ", e left = " << left << std::endl;
         }
