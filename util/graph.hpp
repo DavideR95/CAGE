@@ -135,17 +135,17 @@ class graph_t {
   graph_t() {}  // For deserialization
 
   graph_t(node_t N, const edges_t& edg, const labels_t& lbl)
-      : N_(N), edges_(N), /*nodes_(N),*/ labels_(lbl) {
+      : N_(N), edges_(N), nodes_(N), labels_(lbl) {
     for (node_t i = 0; i < N; i++) {
       edges_[i].init(edg[i]);
-      /*nodes_[i].index = i;
+      nodes_[i].index = i;
       nodes_[i].in_S = false;
       nodes_[i].in_N = false;
-      nodes_[i].deleted = false;*/
+      nodes_[i].deleted = false;
     }
   }
 
-  /* bool is_in_S(node_t node) const { return nodes_[node].in_S; }
+  bool is_in_S(node_t node) const { return nodes_[node].in_S; }
 
   bool is_in_N(node_t node) const { return nodes_[node].in_N; }
 
@@ -161,7 +161,7 @@ class graph_t {
 
   void put_in_N(node_t node) { nodes_[node].in_N = true; }
 
-  void remove_from_N(node_t node) { nodes_[node].in_N = false; } */
+  void remove_from_N(node_t node) { nodes_[node].in_N = false; } 
 
   node_t size() const { return N_; }
   label_t label(node_t i) const { return labels_.at(i); }
@@ -220,7 +220,7 @@ class graph_t {
 
  protected:
   node_t N_;
-  //std::vector<cplx_graph_node<node_t>> nodes_;
+  std::vector<cplx_graph_node<node_t>> nodes_;
   std::vector<binary_search_t<node_t>> edges_;
   labels_t labels_;
 };
