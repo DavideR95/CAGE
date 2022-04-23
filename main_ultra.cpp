@@ -31,9 +31,9 @@ std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
 }
 
 uint64_t solutions = 0;
-std::vector<bool> excluded;
+// std::vector<bool> excluded;
 // std::vector<bool> in_S;
-std::vector<bool> in_C;
+// std::vector<bool> in_C;
 //std::vector<bool> tmp;
 // std::vector<size_t> current_degree;
 
@@ -91,7 +91,8 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             uint64_t deg_u = 0;
             // std::cout << "u = " << u << std::endl;
             for(auto& neigh : graph->neighs(u)) {
-                if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                if(!graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh)) {
                     deg_u++;
                     // std::cout << neigh << " è vicino di u = " << u << std::endl;
                     // n_quadro_S.insert(neigh);
@@ -114,12 +115,14 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                     // assert(!n_quadro_S.count(v) && !n_quadro_S.count(u));
                     if(u != v) {
                         for(auto& neigh : graph->neighs(v)) {
-                            if(neigh != u && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                            //if(neigh != u && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                            if(neigh != u && !graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh)) {
                                 contatore++;
                             }
                         }
                         for(auto& neigh : graph->neighs(u)) {
-                            if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
+                            //if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
+                            if(neigh != v && !graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh)) {
                                 contatore++;
                             }
                         }
@@ -136,11 +139,13 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             auto u = N_of_S[i]; // Scelgo u
             //std::cout << "Vedo u che è: " << u << std::endl;
             for(auto& v : graph->neighs(u)) {
-                if(!in_C[v] && !excluded[v] && !graph->is_in_S(v)/*!in_S[v]*/ /*&& n_quadro_S.count(v)*/) { // Scelgo v
+                // if(!in_C[v] && !excluded[v] && !graph->is_in_S(v)/*!in_S[v]*/ /*&& n_quadro_S.count(v)*/) { // Scelgo v
+                if(!graph->is_in_N(v) && !graph->is_deleted(v) && !graph->is_in_S(v)) {
                     //std::cout << "Poi vedo v che è " << v << std::endl;
                     // assert(n_quadro_S.count(v));
                     for(auto& neigh : graph->neighs(v)) {
-                        if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(u, neigh) /*&& !n_quadro_S.count(neigh)*/) {
+                        //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(u, neigh) /*&& !n_quadro_S.count(neigh)*/) {
+                        if(!graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh) && !graph->are_neighs(u , neigh)) {
                             diff++;
                         }
                     }
@@ -169,7 +174,8 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
         if(neighbors == 1) {
             for(auto& neigh : graph->neighs(N_of_S[start])) {
-                if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                if(!graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh)) {
                     diff++;
                 }
             }
@@ -184,7 +190,8 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             for(int i=start;i<end;i++) {
                 auto u = N_of_S[i];
                 for(auto& neigh : graph->neighs(u)) {
-                    if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                    //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                    if(!graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh)) {
                         diff++;
                     }
                 }
@@ -210,12 +217,15 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
         auto old_size = N_of_S.size();
         auto v = N_of_S[start];
-        if(excluded[v] || graph->is_in_S(v)/*in_S[v]*/) continue;
+        // if(excluded[v] || graph->is_in_S(v)/*in_S[v]*/) continue;
+        if(graph->is_deleted(v) || graph->is_in_S(v)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+            // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+            if(!graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh)) {
                 N_of_S.push_back(neigh);
-                in_C[neigh] = true;
+                // in_C[neigh] = true;
+                graph->put_in_N(neigh);
                 tmp++;
             }
         }
@@ -249,7 +259,8 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         
 
         while(N_of_S.size() > old_size) {
-            in_C[N_of_S.back()] = false;
+            // in_C[N_of_S.back()] = false;
+            graph->remove_from_N(N_of_S.back());
             N_of_S.pop_back();
         }
         if(interrupted) return false;
@@ -279,7 +290,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k) {
     // std::set<node_t, vertexCmp> C_of_S;
     std::vector<node_t> N_of_S;
-    N_of_S.reserve(graph->size()/2);
+    N_of_S.reserve(graph->size()/10);
     for(auto v=0;v<graph->size()-k+1;v++) {
     
     /*for(auto v=103;v<104;v++) {
@@ -295,7 +306,8 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
             if(!excluded[neigh]) {
                 N_of_S.push_back(neigh);
                 // C_of_S.insert(neigh);
-                in_C[neigh] = true;
+                // in_C[neigh] = true;
+                graph->put_in_N(neigh);
             }
         }
         // std::cout << "V è " << v << " e quindi i vicini sono: ";
@@ -320,7 +332,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
         //     }
         // }
         
-        for(auto& v : N_of_S) in_C[v] = false;
+        for(auto& v : N_of_S) graph->remove_from_N(v); // in_C[v] = false;
         N_of_S.clear();
         //solutions.clear();
         //return;
@@ -350,9 +362,9 @@ int main(int argc, char* argv[]) {
 
     std::vector<node_t> S;
 
-    excluded.resize(graph->size());
+    // excluded.resize(graph->size());
     // in_S.resize(graph->size());
-    in_C.resize(graph->size());
+    // in_C.resize(graph->size());
     // current_degree.resize(graph->size());
     // tmp.resize(graph->size(), false);
 
