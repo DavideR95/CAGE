@@ -303,7 +303,8 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
         // Popolo C(S) con i vicini non esclusi di v
 
         for(auto& neigh : graph->fwd_neighs(v)) {
-            if(!excluded[neigh]) {
+            // if(!excluded[neigh]) {
+            if(!graph->is_deleted(neigh)) {
                 N_of_S.push_back(neigh);
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
@@ -324,7 +325,8 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
         // in_S[v] = false;
         graph->remove_from_S(v);
 
-        excluded[v] = true;
+        // excluded[v] = true;
+        graph->delete_node(v);
 
         // for(auto& neigh : graph->fwd_neighs(v)) {
         //     if(!excluded[neigh]) {
