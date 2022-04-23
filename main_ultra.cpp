@@ -122,7 +122,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                         }
                         for(auto& neigh : graph->neighs(u)) {
                             //if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
-                            if(neigh != v && !graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh)) {
+                            if(neigh != v && !graph->is_in_N(neigh) && !graph->is_deleted(neigh) && !graph->is_in_S(neigh) && !graph->are_neighs(v, neigh)) {
                                 contatore++;
                             }
                         }
