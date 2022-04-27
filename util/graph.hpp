@@ -120,7 +120,7 @@ struct cplx_graph_node {
   index_t index;
   bool in_S;
   bool in_N;
-  bool deleted;
+  // bool deleted;
 };
 
 template <typename node_t_ = uint32_t, typename label_t = void>
@@ -141,7 +141,7 @@ class graph_t {
       nodes_[i].index = i;
       nodes_[i].in_S = false;
       nodes_[i].in_N = false;
-      nodes_[i].deleted = false;
+      // nodes_[i].deleted = false;
     }
   }
 
@@ -149,11 +149,11 @@ class graph_t {
 
   bool is_in_N(node_t node) const { return nodes_[node].in_N; }
 
-  bool is_deleted(node_t node) const { return nodes_[node].deleted; }
+  // bool is_deleted(node_t node) const { return nodes_[node].deleted; }
 
-  void delete_node(node_t node) { nodes_[node].deleted = true; }
+  // void delete_node(node_t node) { nodes_[node].deleted = true; }
 
-  void restore_node(node_t node) { nodes_[node].deleted = false; }
+  // void restore_node(node_t node) { nodes_[node].deleted = false; }
 
   void put_in_S(node_t node) { nodes_[node].in_S = true; }
 
