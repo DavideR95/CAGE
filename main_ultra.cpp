@@ -115,8 +115,11 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             for(int i=start;i<end;i++) {
                 auto u = N_of_S[i];
                 uint64_t deg_u = 0;
+
+                auto neighbors_of_u = graph->neighs(u);
+
                 //std::cout << "Vedo u che è: " << u << std::endl;
-                for(auto& v : graph->neighs(u)) {
+                for(auto& v : neighbors_of_u) {
                     // if(!in_C[v] && !excluded[v] && !graph->is_in_S(v)/*!in_S[v]*/ /*&& n_quadro_S.count(v)*/) { // Scelgo v
                     if(!graph->is_in_N(v) && !IS_DELETED(v, first_node) && !graph->is_in_S(v)) {
                         deg_u++; // Step 2
@@ -142,7 +145,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                                 contatore++;
                             }
                         }
-                        for(auto& neigh : graph->neighs(u)) {
+                        for(auto& neigh : neighbors_of_u) {
                             //if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
                             if(neigh != v && !graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh) && !graph->are_neighs(v, neigh)) {
                                 contatore++;
@@ -354,7 +357,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
-    __itt_pause();
+    // __itt_pause();
     bool skip = false;
     int k;
 
