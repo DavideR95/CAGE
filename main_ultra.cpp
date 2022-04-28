@@ -387,6 +387,8 @@ int main(int argc, char* argv[]) {
         // current_degree[i] = graph->degree(i);
     }
 
+    edges /= 2; // Undirected graph
+
     if(!skip) std::cout << "Edges: " << edges << std::endl;
 
     graph->Permute(DegeneracyOrder(*graph));
