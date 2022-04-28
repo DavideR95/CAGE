@@ -89,21 +89,21 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         // std::unordered_set<node_t> n_quadro_S;
         // n_quadro_S.reserve(150);
 
-        for(int i=start;i<end;i++) {
-            auto u = N_of_S[i];
-            //std::cout << "neigh " << u << std::endl;
-            uint64_t deg_u = 0;
-            // std::cout << "u = " << u << std::endl;
-            for(auto& neigh : graph->neighs(u)) {
-                //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
-                if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
-                    deg_u++;
-                    // std::cout << neigh << " è vicino di u = " << u << std::endl;
-                    // n_quadro_S.insert(neigh);
-                }
-            }
-            diff += (deg_u * (deg_u-1)) / 2;
-        }
+        // for(int i=start;i<end;i++) {
+        //     auto u = N_of_S[i];
+        //     //std::cout << "neigh " << u << std::endl;
+        //     uint64_t deg_u = 0;
+        //     // std::cout << "u = " << u << std::endl;
+        //     for(auto& neigh : graph->neighs(u)) {
+        //         //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+        //         if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
+        //             deg_u++;
+        //             // std::cout << neigh << " è vicino di u = " << u << std::endl;
+        //             // n_quadro_S.insert(neigh);
+        //         }
+        //     }
+        //     diff += (deg_u * (deg_u-1)) / 2;
+        // }
         auto diff2 = diff - diff1;
         //std::cout << "Col metodo 2 ne ho trovati altri " << diff2 << std::endl;
 
@@ -141,10 +141,12 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         // Caso 4: uno + uno + uno
         for(int i=start;i<end;i++) {
             auto u = N_of_S[i]; // Scelgo u
+            uint64_t deg_u = 0;
             //std::cout << "Vedo u che è: " << u << std::endl;
             for(auto& v : graph->neighs(u)) {
                 // if(!in_C[v] && !excluded[v] && !graph->is_in_S(v)/*!in_S[v]*/ /*&& n_quadro_S.count(v)*/) { // Scelgo v
                 if(!graph->is_in_N(v) && !IS_DELETED(v, first_node) && !graph->is_in_S(v)) {
+                    deg_u++; // Step 2
                     //std::cout << "Poi vedo v che è " << v << std::endl;
                     // assert(n_quadro_S.count(v));
                     for(auto& neigh : graph->neighs(v)) {
@@ -155,6 +157,8 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                     }
                 }
             }
+            diff += (deg_u * (deg_u - 1)) / 2;
+            
         }
 
         auto diff4 = diff - diff3 - diff2 - diff1;
