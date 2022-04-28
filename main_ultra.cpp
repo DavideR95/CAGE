@@ -128,7 +128,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                         for(auto& neigh : graph->neighs(u)) {
                             //if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
                             if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
-                                // deg_u++; // Fusione del punto 2 qui
+                                deg_u++; // Fusione del punto 2 qui
                                 if(neigh != v && !graph->are_neighs(v, neigh)) { // Condizione del punto 3
                                     contatore++;
                                 }
@@ -136,10 +136,10 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                         }
                     }
                 }
-                for(auto& neigh : graph->neighs(u)) {
+                /*for(auto& neigh : graph->neighs(u)) {
                     if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh))
                         deg_u++;
-                }
+                }*/
                 diff += (deg_u * (deg_u-1)) / 2;
             }
             diff += contatore / 2;
