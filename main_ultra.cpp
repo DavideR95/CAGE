@@ -163,7 +163,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             }
         }
 
-        auto diff4 = diff - diff3 - diff2 - diff1;
+        auto diff4 = diff - diff3 - diff1;
         //std::cout << "Col metodo 4 ne ho trovati altri " << diff4 << std::endl;
 
         solutions += diff;
