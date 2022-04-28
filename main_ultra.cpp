@@ -141,7 +141,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             }
             diff += contatore / 2;
         }
-        auto diff3 = diff - diff2 - diff1;
+        auto diff3 = diff - diff1;
         //std::cout << "Col metodo 3 ne ho trovati altri " << diff3 << std::endl;
 
         // Caso 4: uno + uno + uno
