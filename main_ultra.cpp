@@ -136,7 +136,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                         }
                     }
                 }
-                if(neighbors > 1) deg_u /= (neighbors - 1);
+                /*if(neighbors > 1)*/ deg_u /= (end - start);
                 diff += (deg_u * (deg_u-1)) / 2;
             }
             diff += contatore / 2;
