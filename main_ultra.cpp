@@ -131,14 +131,15 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                                 diff++; // Step 4
                             }
                         }
-                    }
-                    // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
-                    for(int j=start;j<end;j++) {
-                        auto v = N_of_S[j];
-                        if(v != neigh && !graph->are_neighs(neigh, v) && v != u) {
-                            contatore++;
+                        // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
+                        for(int j=start;j<end;j++) {
+                            auto v = N_of_S[j];
+                            if(v != neigh && !graph->are_neighs(neigh, v) && v != u) {
+                                contatore++;
+                            }
                         }
                     }
+                    
                 }
                 diff += (deg_u * (deg_u - 1)) / 2;
 
