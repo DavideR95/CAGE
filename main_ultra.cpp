@@ -413,15 +413,15 @@ int main(int argc, char* argv[]) {
     __itt_pause();
 
     std::cout << "Found " << solutions << " graphlets of size " << k;
-    std::cerr << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
-    std::cerr << "Recursion nodes - rec. leaves: " << recursion_nodes << " - " << leaves << " = " << recursion_nodes-leaves << std::endl;
+    std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
+    std::cout << "Recursion nodes - rec. leaves: " << recursion_nodes << " - " << leaves << " = " << recursion_nodes-leaves << std::endl;
     //std::cerr << "Solutions per sec: " << counter / std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() * 1000 << std::endl;
-    std::cerr << "Leaves: " << leaves << " fruitful leaves: " << fruitful_leaves << " dead leaves: " << (leaves-fruitful_leaves);
-    std::cerr << " ( " << (double) (leaves-fruitful_leaves)/leaves * 100. << " % )" << std::endl;
-    std::cerr << "Graphlets/leaves ratio: " << (double) solutions / leaves << std::endl;
-    std::cerr << "Average sol. per leaf: " << (double) solutions / fruitful_leaves << std::endl;
-    std::cerr << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
-    std::cerr << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
+    std::cout << "Leaves: " << leaves << " fruitful leaves: " << fruitful_leaves << " dead leaves: " << (leaves-fruitful_leaves);
+    std::cout << " ( " << (double) (leaves-fruitful_leaves)/leaves * 100. << " % )" << std::endl;
+    std::cout << "Graphlets/leaves ratio: " << (double) solutions / leaves << std::endl;
+    std::cout << "Average sol. per leaf: " << (double) solutions / fruitful_leaves << std::endl;
+    std::cout << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
+    std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
 
     return (interrupted ? 14 : 0);
 }
