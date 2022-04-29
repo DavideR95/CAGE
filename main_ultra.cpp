@@ -402,6 +402,8 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, [](int) { interrupted = true; });
     alarm(TIMEOUT); // Set timer 
 
+    std::cerr << "Graph read." << std::endl;
+
     __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
 
