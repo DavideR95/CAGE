@@ -357,7 +357,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
-    // __itt_pause();
+    __itt_pause();
     bool skip = false;
     int k;
 
