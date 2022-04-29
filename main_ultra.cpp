@@ -132,6 +132,13 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                             }
                         }
                     }
+                    // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
+                    for(int j=start;j<end;j++) {
+                        auto neigh_n_of_s = N_of_S[j];
+                        if(neigh_n_of_s != v && !graph->are_neighs(v, neigh_n_of_s) && neigh_n_of_s != u) {
+                            contatore++;
+                        }
+                    }
                 }
                 diff += (deg_u * (deg_u - 1)) / 2;
 
@@ -145,12 +152,12 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                                 contatore++;
                             }
                         }
-                        for(auto& neigh : neighbors_of_u) {
-                            //if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
-                            if(neigh != v && !graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh) && !graph->are_neighs(v, neigh)) {
-                                contatore++;
-                            }
-                        }
+                        // for(auto& neigh : neighbors_of_u) {
+                        //     //if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
+                        //     if(neigh != v && !graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh) && !graph->are_neighs(v, neigh)) {
+                        //         contatore++;
+                        //     }
+                        // }
                     }
                 }
             }
