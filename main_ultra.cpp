@@ -119,15 +119,15 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                 auto neighbors_of_u = graph->neighs(u);
 
                 //std::cout << "Vedo u che è: " << u << std::endl;
-                for(auto& v : neighbors_of_u) {
+                for(auto& neigh : neighbors_of_u) {
                     // if(!in_C[v] && !excluded[v] && !graph->is_in_S(v)/*!in_S[v]*/ /*&& n_quadro_S.count(v)*/) { // Scelgo v
-                    if(!graph->is_in_N(v) && !IS_DELETED(v, first_node) && !graph->is_in_S(v)) {
+                    if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
                         deg_u++; // Step 2
                         //std::cout << "Poi vedo v che è " << v << std::endl;
                         // assert(n_quadro_S.count(v));
-                        for(auto& neigh : graph->neighs(v)) {
+                        for(auto& v : graph->neighs(neigh)) {
                             //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(u, neigh) /*&& !n_quadro_S.count(neigh)*/) {
-                            if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh) && !graph->are_neighs(u , neigh)) {
+                            if(!graph->is_in_N(v) && !IS_DELETED(v, first_node) && !graph->is_in_S(v) && !graph->are_neighs(u , v)) {
                                 diff++; // Step 4
                             }
                         }
