@@ -113,6 +113,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         if(neighbors > 0) {
             uint64_t contatore = 0;
             for(int i=start;i<end;i++) {
+                if(interrupted) break;
                 auto u = N_of_S[i];
                 uint64_t deg_u = 0;
 
