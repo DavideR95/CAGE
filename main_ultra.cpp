@@ -26,6 +26,8 @@
 
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
 
+#define CHECK_N(elem) (in_N.count(elem))
+
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
     const std::string& input_file, bool directed = false) {
@@ -52,6 +54,8 @@ uint64_t min_sol_per_leaf = 10000000L;
 uint64_t max_sol_per_leaf = 0L;
 uint64_t count_min_leaf = 0L;
 uint64_t count_max_leaf = 0L;
+
+std::unordered_set<node_t> in_N;
 
 bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
@@ -86,11 +90,11 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                 auto neighbors_of_u = graph->neighs(u);
 
                 for(auto& neigh : neighbors_of_u) {
-                    if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                    if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                         deg_u++; // Step 2
 
                         for(auto& v : graph->neighs(neigh)) {
-                            if(!graph->is_in_N(v) && !IS_DELETED(v, first_node) && !IN_ARRAY(v, S) && !graph->are_neighs(u, v)) {
+                            if(!CHECK_N(v) && !IS_DELETED(v, first_node) && !IN_ARRAY(v, S) && !graph->are_neighs(u, v)) {
                                 diff++; // Step 4
                             }
                         }
@@ -111,7 +115,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     
                     if(u != v) {
                         for(auto& neigh : graph->neighs(v)) {
-                            if(neigh != u && !graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                            if(neigh != u && !CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                                 contatore++;
                             }
                         }
@@ -143,7 +147,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(neighbors == 1) {
             for(auto& neigh : graph->neighs(N_of_S[start])) {
                 // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
-                if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                     diff++;
                 }
             }
@@ -154,7 +158,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             for(int i=start;i<end;i++) {
                 auto u = N_of_S[i];
                 for(auto& neigh : graph->neighs(u)) {
-                    if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                    if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                         diff++;
                     }
                 }
@@ -184,10 +188,11 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+            if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                 N_of_S.push_back(neigh);
                 // in_C[neigh] = true;
-                graph->put_in_N(neigh);
+                // graph->put_in_N(neigh);
+                in_N.insert(neigh);
                 tmp++;
             }
         }
@@ -222,7 +227,8 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
         while(N_of_S.size() > old_size) {
             // in_C[N_of_S.back()] = false;
-            graph->remove_from_N(N_of_S.back());
+            // graph->remove_from_N(N_of_S.back());
+            in_N.erase(N_of_S.back());
             N_of_S.pop_back();
         }
         if(interrupted) return false;
@@ -271,7 +277,8 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
                 N_of_S.push_back(neigh);
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
-                graph->put_in_N(neigh);
+                // graph->put_in_N(neigh);
+                in_N.insert(neigh);
             }
         }
 
@@ -284,8 +291,9 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
 
         // no need to explicitly delete v
         
-        for(auto& v : N_of_S) graph->remove_from_N(v); 
+        // for(auto& v : N_of_S) graph->remove_from_N(v); 
         N_of_S.clear();
+        in_N.clear();
 
     }
 }
@@ -315,12 +323,15 @@ int main(int argc, char* argv[]) {
 
     if(!skip) std::cout << "Nodes: " << graph->size() << std::endl;
     size_t edges = 0;
+    size_t max_degree = 0;
     for(size_t i = 0;i < graph->size(); i++) {
         edges += graph->degree(i);
+        if(graph->degree(i) > max_degree) max_degree = graph->degree(i);
         // current_degree[i] = graph->degree(i);
     }
 
     edges /= 2; // Undirected graph
+    in_N.reserve(2*max_degree);
 
     if(!skip) std::cout << "Edges: " << edges << std::endl;
 
