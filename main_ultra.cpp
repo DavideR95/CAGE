@@ -277,7 +277,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
         for(auto& neigh : graph->fwd_neighs(v)) {
             // if(!excluded[neigh]) {
             // if(!graph->is_deleted(neigh)) {
-            if(!IS_DELETED(neigh > v)) { 
+            if(!IS_DELETED(neigh, v)) { 
                 N_of_S.push_back(neigh);
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
