@@ -331,7 +331,7 @@ int main(int argc, char* argv[]) {
     }
 
     edges /= 2; // Undirected graph
-    in_N.reserve(2*max_degree);
+    in_N.reserve(1.5*max_degree);
 
     if(!skip) std::cout << "Edges: " << edges << std::endl;
 
