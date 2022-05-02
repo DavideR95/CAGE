@@ -60,8 +60,8 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     if(interrupted) return false; // Timer
 
-    if(start == N_of_S.size()) { leaves++; return false; } // No nuovi nodi
     auto end = N_of_S.size();
+    if(start == end) { leaves++; return false; } // No nuovi nodi
     bool found = false;
 
     auto first_node = S.front();
