@@ -145,7 +145,7 @@ class graph_t {
     }
   }
 
-  bool is_in_S(node_t node) const { return nodes_[node].in_S; }
+  // bool is_in_S(node_t node) const { return nodes_[node].in_S; }
 
   bool is_in_N(node_t node) const { return nodes_[node].in_N; }
 
