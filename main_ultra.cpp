@@ -26,7 +26,7 @@
 
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
 
-#define CHECK_N(elem) (in_N.count(elem))
+#define CHECK_N(elem) (inverted_N.count(elem))
 
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
@@ -121,7 +121,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
             cuckoo_hash_set<node_t> inverted_N;
             inverted_N.reserve(N_of_S.size()*2);
-            for(int i=start;i<end;i++) inverted_N.insert(N_of_S[i]);
+            for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
 
 
             uint64_t contatore = 0;
