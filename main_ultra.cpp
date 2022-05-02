@@ -26,7 +26,7 @@
 
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
 
-#define CHECK_N(elem) (inverted_N[elem])
+#define CHECK_N(elem) (inverted_N[elem%next_prime])
 
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
@@ -117,8 +117,8 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(neighbors > 0) {
 
             node_t next_prime = find_prime_after(N_of_S.size());
-            std::vector<bool> inverted_N(next_prime);
-            for(int i=start;i<end;i++) inverted_N[N_of_S[i]] = true;
+            std::vector<bool> inverted_N(next_prime+1);
+            for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;
 
             uint64_t contatore = 0;
             for(int i=start;i<end;i++) {
@@ -185,7 +185,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
         node_t next_prime = find_prime_after(N_of_S.size());
         std::vector<bool> inverted_N(next_prime);
-        for(int i=start;i<end;i++) inverted_N[N_of_S[i]] = true;
+        for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;
 
         if(neighbors == 1) {
             for(auto& neigh : graph->neighs(N_of_S[start])) {
