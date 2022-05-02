@@ -26,7 +26,7 @@
 
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
 
-#define CHECK_N(elem) (in_N.count(elem))
+#define CHECK_N(elem) (inverted_N[elem])
 
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
@@ -57,6 +57,40 @@ uint64_t count_max_leaf = 0L;
 
 std::unordered_set<node_t> in_N;
 
+bool isPrime(node_t n) {
+    node_t i,root;
+
+    if (n%2 == 0 || n%3 == 0)
+        return false;
+
+    root = (node_t)sqrt(n);
+
+    for (i=5; i<=root; i+=6)
+    {
+        if (n%i == 0)
+           return false;
+    }
+
+    for (i=7; i<=root; i+=6)
+    {
+        if (n%i == 0)
+           return false;
+    }
+
+    return true;
+}
+
+node_t find_prime_after(node_t n) {
+    int i=n+1;
+    while(1)
+    {
+        if(isPrime(i))
+            return i;
+        i++;
+    }
+    return 1;
+}
+
 bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
 
@@ -81,6 +115,11 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
         // Caso 3: due nodi a distanza 1 e uno a distanza 2:
         if(neighbors > 0) {
+
+            node_t next_prime = find_prime_after(N_of_S.size());
+            std::vector<bool> inverted_N(next_prime);
+            for(int i=start;i<end;i++) inverted_N[N_of_S[i]] = true;
+
             uint64_t contatore = 0;
             for(int i=start;i<end;i++) {
                 if(interrupted) break;
