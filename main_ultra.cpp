@@ -55,41 +55,6 @@ uint64_t max_sol_per_leaf = 0L;
 uint64_t count_min_leaf = 0L;
 uint64_t count_max_leaf = 0L;
 
-std::unordered_set<node_t> in_N;
-
-bool isPrime(node_t n) {
-    node_t i,root;
-
-    if (n%2 == 0 || n%3 == 0)
-        return false;
-
-    root = (node_t)sqrt(n);
-
-    for (i=5; i<=root; i+=6)
-    {
-        if (n%i == 0)
-           return false;
-    }
-
-    for (i=7; i<=root; i+=6)
-    {
-        if (n%i == 0)
-           return false;
-    }
-
-    return true;
-}
-
-node_t find_prime_after(node_t n) {
-    int i=n+1;
-    while(1)
-    {
-        if(isPrime(i))
-            return i;
-        i++;
-    }
-    return 1;
-}
 
 bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
@@ -229,6 +194,10 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     bool im_a_parent = false;
 
+    cuckoo_hash_set<node_t> inverted_N;
+    inverted_N.reserve(N_of_S.size()*2);
+    for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
+
     for(;start < end; start++) {
         if(interrupted) return false;
 
@@ -238,11 +207,12 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!in_N.count(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+            if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                 N_of_S.push_back(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
-                in_N.insert(neigh);
+                //in_N.insert(neigh);
+                inverted_N.insert(neigh);
                 tmp++;
             }
         }
@@ -278,7 +248,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         while(N_of_S.size() > old_size) {
             // in_C[N_of_S.back()] = false;
             // graph->remove_from_N(N_of_S.back());
-            in_N.erase(N_of_S.back());
+            inverted_N.erase(N_of_S.back());
             N_of_S.pop_back();
         }
         if(interrupted) return false;
@@ -328,7 +298,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
-                in_N.insert(neigh);
+                // in_N.insert(neigh);
             }
         }
 
@@ -343,7 +313,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         
         // for(auto& v : N_of_S) graph->remove_from_N(v); 
         N_of_S.clear();
-        in_N.clear();
+        // in_N.clear();
 
     }
 }
@@ -381,7 +351,7 @@ int main(int argc, char* argv[]) {
     }
 
     edges /= 2; // Undirected graph
-    in_N.reserve(1.5*max_degree);
+    // in_N.reserve(1.5*max_degree);
 
     if(!skip) std::cout << "Edges: " << edges << std::endl;
 
