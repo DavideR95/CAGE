@@ -24,6 +24,8 @@
 
 #define IS_DELETED(neighbor, node) (neighbor < node)
 
+#define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
+
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
     const std::string& input_file, bool directed = false) {
@@ -62,7 +64,7 @@ uint64_t count_max_leaf = 0L;
     }
 } vertexCmp;*/
 
-bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
+bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
 
     // INV: S.size() <= k-2
@@ -75,7 +77,7 @@ bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph
 
     auto first_node = S->front();
 
-    if(S->size() == k-3) {
+    if(S.size() == k-3) {
         uint64_t diff = 0;
         auto neighbors = end - start;
 
@@ -146,7 +148,7 @@ bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph
         return (diff > 0);
     }
 
-    if(S->size() == k-2) {
+    if(S.size() == k-2) {
         auto neighbors = N_of_S.size() - start;
         uint64_t diff = 0;
 
@@ -164,11 +166,11 @@ bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph
             for(int i=start;i<end;i++) {
                 auto u = N_of_S[i];
                 for(auto& neigh : graph->neighs(u)) {
-                    
                     if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
                         diff++;
                     }
                 }
+                if(interrupted) break;
             }
         } 
 
@@ -208,7 +210,7 @@ bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph
         // std::cout << "Ora dovrei prendere " << v << std::endl;
         if(start+1 < end+tmp) {
             // Chiamata sx
-            S->push_back(v); 
+            S.push_back(v); 
             // in_S[v] = true;
             graph->put_in_S(v);
             
@@ -216,7 +218,7 @@ bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
-            S->pop_back();
+            S.pop_back();
             // in_S[v] = false;
             graph->remove_from_S(v);
             // excluded[v] = true;
@@ -259,7 +261,7 @@ bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph
 
 
 
-void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k) {
+void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k) {
     // std::set<node_t, vertexCmp> C_of_S;
     std::vector<node_t> N_of_S;
     N_of_S.reserve(graph->size()/10);
@@ -268,7 +270,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
     /*for(auto v=103;v<104;v++) {
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
-        S->push_back(v);
+        S.push_back(v);
         // in_S[v] = true;
         graph->put_in_S(v);
         // Prima lista C(S)
@@ -288,7 +290,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
 
         START_REC;
         
-        S->pop_back();
+        S.pop_back();
 
         graph->remove_from_S(v);
 
@@ -345,7 +347,7 @@ int main(int argc, char* argv[]) {
     __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
 
-    main_enum(&S, graph.get(), k);
+    main_enum(S, graph.get(), k);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
     __itt_pause();
