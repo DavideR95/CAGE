@@ -118,7 +118,7 @@ extern template class label_array_t<uint64_t, uint64_t>;
 template <typename index_t = uint32_t>
 struct cplx_graph_node {
   index_t index;
-  bool in_S;
+  // bool in_S;
   bool in_N;
   // bool deleted;
 };
@@ -139,7 +139,7 @@ class graph_t {
     for (node_t i = 0; i < N; i++) {
       edges_[i].init(edg[i]);
       nodes_[i].index = i;
-      nodes_[i].in_S = false;
+      // nodes_[i].in_S = false;
       nodes_[i].in_N = false;
       // nodes_[i].deleted = false;
     }
@@ -155,9 +155,9 @@ class graph_t {
 
   // void restore_node(node_t node) { nodes_[node].deleted = false; }
 
-  void put_in_S(node_t node) { nodes_[node].in_S = true; }
+  // void put_in_S(node_t node) { nodes_[node].in_S = true; }
 
-  void remove_from_S(node_t node) { nodes_[node].in_S = false; }
+  // void remove_from_S(node_t node) { nodes_[node].in_S = false; }
 
   void put_in_N(node_t node) { nodes_[node].in_N = true; }
 
