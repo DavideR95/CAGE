@@ -20,7 +20,7 @@
 //#endif
 
 //#define START_REC (ciproviamo(S, graph, k, C_of_S, 0, 0))
-#define START_REC (enhanced(S, graph, k, N_of_S, 0))
+#define START_REC (enumeration_ultra(S, graph, k, N_of_S, 0))
 
 #define IS_DELETED(neighbor, node) (neighbor < node)
 
@@ -62,7 +62,7 @@ uint64_t count_max_leaf = 0L;
     }
 } vertexCmp;*/
 
-bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
+bool enumeration_ultra(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
 
     // INV: S.size() <= k-2
@@ -76,38 +76,13 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
     auto first_node = S->front();
 
     if(S->size() == k-3) {
-        // std::ofstream f("../../out_ultra.txt", std::ios::out);
         uint64_t diff = 0;
-        auto neighbors = N_of_S.size() - start;
+        auto neighbors = end - start;
 
         // Caso 1: 3 nodi a distanza 1
         diff += (neighbors * (neighbors - 1) * (neighbors - 2)) / 6; // Se ci sono 1 o 2 neighbors fa zero e va bene
-        // std::cout << "I neighbor sono " << neighbors << " per cui diff = " << diff << std::endl;
         
-        auto diff1 = diff;
         // Caso 2: un nodo a distanza 1 e due a distanza 2:
-        // std::unordered_set<node_t> n_quadro_S;
-        // n_quadro_S.reserve(150);
-
-        // for(int i=start;i<end;i++) {
-        //     auto u = N_of_S[i];
-        //     //std::cout << "neigh " << u << std::endl;
-        //     uint64_t deg_u = 0;
-        //     // std::cout << "u = " << u << std::endl;
-        //     for(auto& neigh : graph->neighs(u)) {
-        //         //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
-        //         if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
-        //             deg_u++;
-        //             // std::cout << neigh << " è vicino di u = " << u << std::endl;
-        //             // n_quadro_S.insert(neigh);
-        //         }
-        //     }
-        //     diff += (deg_u * (deg_u-1)) / 2;
-        // }
-        auto diff2 = diff - diff1;
-        //std::cout << "Col metodo 2 ne ho trovati altri " << diff2 << std::endl;
-
-
 
         // Caso 3: due nodi a distanza 1 e uno a distanza 2:
         if(neighbors > 0) {
@@ -119,15 +94,11 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
                 auto neighbors_of_u = graph->neighs(u);
 
-                //std::cout << "Vedo u che è: " << u << std::endl;
                 for(auto& neigh : neighbors_of_u) {
-                    // if(!in_C[v] && !excluded[v] && !graph->is_in_S(v)/*!in_S[v]*/ /*&& n_quadro_S.count(v)*/) { // Scelgo v
                     if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
                         deg_u++; // Step 2
-                        //std::cout << "Poi vedo v che è " << v << std::endl;
-                        // assert(n_quadro_S.count(v));
+
                         for(auto& v : graph->neighs(neigh)) {
-                            //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(u, neigh) /*&& !n_quadro_S.count(neigh)*/) {
                             if(!graph->is_in_N(v) && !IS_DELETED(v, first_node) && !graph->is_in_S(v) && !graph->are_neighs(u , v)) {
                                 diff++; // Step 4
                             }
@@ -140,13 +111,13 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                             }
                         }
                     }
-                    
+                    if(interrupted) break;
                 }
                 diff += (deg_u * (deg_u - 1)) / 2;
 
                 for(int j=start;j<end;j++) { // Step 3
                     auto v = N_of_S[j];
-                    // assert(!n_quadro_S.count(v) && !n_quadro_S.count(u));
+                    
                     if(u != v) {
                         for(auto& neigh : graph->neighs(v)) {
                             //if(neigh != u && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
@@ -154,29 +125,15 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
                                 contatore++;
                             }
                         }
-                        // for(auto& neigh : neighbors_of_u) {
-                        //     //if(neigh != v && !in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/ && !graph->are_neighs(v, neigh)) {
-                        //     if(neigh != v && !graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh) && !graph->are_neighs(v, neigh)) {
-                        //         contatore++;
-                        //     }
-                        // }
                     }
+
+                    if(interrupted) break;
                 }
             }
             diff += contatore / 2;
         }
-        auto diff3 = diff - diff2 - diff1;
-        //std::cout << "Col metodo 3 ne ho trovati altri " << diff3 << std::endl;
 
         // Caso 4: uno + uno + uno
-        /*for(int i=start;i<end;i++) {
-            auto u = N_of_S[i]; // Scelgo u
-            
-            // Moved to step 3
-        } */
-
-        auto diff4 = diff - diff3 - diff2 - diff1;
-        //std::cout << "Col metodo 4 ne ho trovati altri " << diff4 << std::endl;
 
         solutions += diff;
         if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
@@ -186,7 +143,6 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
         leaves++;
         if(diff > 0) fruitful_leaves++;
-        // f.close();
         return (diff > 0);
     }
 
@@ -205,14 +161,10 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         else {
             diff = (neighbors) * (neighbors - 1) / 2; // Questi sono quelli che posso fare a distanza 1
             
-            assert(neighbors > 1);
-
-            // qui devo ciclare tra i k-1 
-
             for(int i=start;i<end;i++) {
                 auto u = N_of_S[i];
                 for(auto& neigh : graph->neighs(u)) {
-                    //if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
+                    
                     if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
                         diff++;
                     }
@@ -221,7 +173,6 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         } 
 
         solutions += diff; 
-        //assert(diff != 0);
         if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
         else if(diff == min_sol_per_leaf) count_min_leaf++;
         if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
@@ -239,11 +190,10 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
         auto old_size = N_of_S.size();
         auto v = N_of_S[start];
-        // if(excluded[v] || graph->is_in_S(v)/*in_S[v]*/) continue;
+        
         if(IS_DELETED(v, first_node) || graph->is_in_S(v)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
             if(!graph->is_in_N(neigh) && !IS_DELETED(neigh, first_node) && !graph->is_in_S(neigh)) {
                 N_of_S.push_back(neigh);
                 // in_C[neigh] = true;
@@ -262,7 +212,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             // in_S[v] = true;
             graph->put_in_S(v);
             
-            left = enhanced(S, graph, k, N_of_S, start+1);
+            left = enumeration_ultra(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
@@ -327,41 +277,26 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
         for(auto& neigh : graph->fwd_neighs(v)) {
             // if(!excluded[neigh]) {
             // if(!graph->is_deleted(neigh)) {
-            if(neigh > v) { // equivalent to !IS_DELETED(neigh, v)
+            if(!IS_DELETED(neigh > v)) { 
                 N_of_S.push_back(neigh);
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
                 graph->put_in_N(neigh);
             }
         }
-        // std::cout << "V è " << v << " e quindi i vicini sono: ";
-        // for(auto& n : C_of_S) std::cout << n << " ";
-        // std::cout << std::endl;
 
-        //enhanced(S, graph, k, C_of_S, 0);
-
-        // std::sort(C_of_S.begin(), C_of_S.end(), vertexCmp);
 
         START_REC;
         
         S->pop_back();
-        // in_S[v] = false;
+
         graph->remove_from_S(v);
 
-        // excluded[v] = true;
-        // graph->delete_node(v);
-        // no need to explicitly delete
-
-        // for(auto& neigh : graph->fwd_neighs(v)) {
-        //     if(!excluded[neigh]) {
-        //         current_degree[neigh]--;
-        //     }
-        // }
+        // no need to explicitly delete v
         
-        for(auto& v : N_of_S) graph->remove_from_N(v); // in_C[v] = false;
+        for(auto& v : N_of_S) graph->remove_from_N(v); 
         N_of_S.clear();
-        //solutions.clear();
-        //return;
+
     }
 }
 
@@ -387,12 +322,6 @@ int main(int argc, char* argv[]) {
     auto graph = ReadFastGraph<node_t, void>(argv[1]);
 
     std::vector<node_t> S;
-
-    // excluded.resize(graph->size());
-    // in_S.resize(graph->size());
-    // in_C.resize(graph->size());
-    // current_degree.resize(graph->size());
-    // tmp.resize(graph->size(), false);
 
     if(!skip) std::cout << "Nodes: " << graph->size() << std::endl;
     size_t edges = 0;
