@@ -183,6 +183,10 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         auto neighbors = N_of_S.size() - start;
         uint64_t diff = 0;
 
+        node_t next_prime = find_prime_after(N_of_S.size());
+        std::vector<bool> inverted_N(next_prime);
+        for(int i=start;i<end;i++) inverted_N[N_of_S[i]] = true;
+
         if(neighbors == 1) {
             for(auto& neigh : graph->neighs(N_of_S[start])) {
                 // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
@@ -227,7 +231,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+            if(!in_N.count(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                 N_of_S.push_back(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
