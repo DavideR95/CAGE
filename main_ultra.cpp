@@ -26,7 +26,7 @@
 
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
 
-#define CHECK_N(elem) (inverted_N.count(elem))
+#define CHECK_N(elem) (in_N.count(elem))
 
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
