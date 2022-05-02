@@ -116,7 +116,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         // Caso 3: due nodi a distanza 1 e uno a distanza 2:
         if(neighbors > 0) {
 
-            node_t next_prime = find_prime_after(N_of_S.size()+100000);
+            node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
             std::vector<bool> inverted_N(next_prime+1, false);
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;
 
@@ -183,7 +183,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         auto neighbors = N_of_S.size() - start;
         uint64_t diff = 0;
 
-        node_t next_prime = find_prime_after(N_of_S.size()+10000);
+        node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
         std::vector<bool> inverted_N(next_prime+1, false);
         for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;
 
