@@ -75,7 +75,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
     auto end = N_of_S.size();
     bool found = false;
 
-    auto first_node = S->front();
+    auto first_node = S.front();
 
     if(S.size() == k-3) {
         uint64_t diff = 0;
