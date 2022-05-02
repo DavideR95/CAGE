@@ -117,7 +117,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(neighbors > 0) {
 
             node_t next_prime = find_prime_after(N_of_S.size());
-            std::vector<bool> inverted_N(next_prime+1);
+            std::vector<bool> inverted_N(next_prime+1, false);
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;
 
             uint64_t contatore = 0;
@@ -184,7 +184,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         uint64_t diff = 0;
 
         node_t next_prime = find_prime_after(N_of_S.size());
-        std::vector<bool> inverted_N(next_prime);
+        std::vector<bool> inverted_N(next_prime+1, false);
         for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;
 
         if(neighbors == 1) {
