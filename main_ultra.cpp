@@ -60,7 +60,7 @@ uint64_t count_max_leaf = 0L;
     }
 } vertexCmp;*/
 
-bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
+bool enhanced(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
 
     // INV: S.size() <= k-2
@@ -71,8 +71,8 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
     auto end = N_of_S.size();
     bool found = false;
 
-    if(S->size() == k-1) {
-        auto diff = N_of_S.size() - start;
+    if(S.size() == k-1) {
+        auto diff = end - start;
         solutions += diff; 
         
         if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
@@ -115,7 +115,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
         // std::cout << "Ora dovrei prendere " << v << std::endl;
         if(start+1 < end+tmp) {
             // Chiamata sx
-            S->push_back(v); 
+            S.push_back(v); 
             in_S[v] = true;
             // graph->put_in_S(v);
             
@@ -123,7 +123,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
-            S->pop_back();
+            S.pop_back();
             in_S[v] = false;
             // graph->remove_from_S(v);
             // excluded[v] = true;
@@ -165,7 +165,7 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
 
 
-void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k) {
+void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k) {
     // std::set<node_t, vertexCmp> C_of_S;
     std::vector<node_t> N_of_S;
     N_of_S.reserve(graph->size()/2);
@@ -174,7 +174,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
     /*for(auto v=103;v<104;v++) {
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
-        S->push_back(v);
+        S.push_back(v);
         in_S[v] = true;
         // graph->put_in_S(v);
         // Prima lista C(S)
@@ -197,7 +197,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
 
         START_REC;
         
-        S->pop_back();
+        S.pop_back();
         in_S[v] = false;
         // graph->remove_from_S(v);
 
@@ -263,21 +263,21 @@ int main(int argc, char* argv[]) {
     __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
 
-    main_enum(&S, graph.get(), k);
+    main_enum(S, graph.get(), k);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
     __itt_pause();
 
-    std::cerr << "Found " << solutions << " graphlets of size " << k;
-    std::cerr << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
-    std::cerr << "Recursion nodes - rec. leaves: " << recursion_nodes << " - " << leaves << " = " << recursion_nodes-leaves << std::endl;
+    std::cout << "Found " << solutions << " graphlets of size " << k;
+    std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
+    std::cout << "Recursion nodes - rec. leaves: " << recursion_nodes << " - " << leaves << " = " << recursion_nodes-leaves << std::endl;
     //std::cerr << "Solutions per sec: " << counter / std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() * 1000 << std::endl;
-    std::cerr << "Leaves: " << leaves << " fruitful leaves: " << fruitful_leaves << " dead leaves: " << (leaves-fruitful_leaves);
-    std::cerr << " ( " << (double) (leaves-fruitful_leaves)/leaves * 100. << " % )" << std::endl;
-    std::cerr << "Graphlets/leaves ratio: " << (double) solutions / leaves << std::endl;
-    std::cerr << "Average sol. per leaf: " << (double) solutions / fruitful_leaves << std::endl;
-    std::cerr << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
-    std::cerr << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
+    std::cout << "Leaves: " << leaves << " fruitful leaves: " << fruitful_leaves << " dead leaves: " << (leaves-fruitful_leaves);
+    std::cout << " ( " << (double) (leaves-fruitful_leaves)/leaves * 100. << " % )" << std::endl;
+    std::cout << "Graphlets/leaves ratio: " << (double) solutions / leaves << std::endl;
+    std::cout << "Average sol. per leaf: " << (double) solutions / fruitful_leaves << std::endl;
+    std::cout << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
+    std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
 
     return (interrupted ? 14 : 0);
 }
