@@ -20,7 +20,13 @@
 //#endif
 
 //#define START_REC (ciproviamo(S, graph, k, C_of_S, 0, 0))
-#define START_REC (enhanced(S, graph, k, N_of_S, 0))
+#define START_REC (enumeration_ultra(S, graph, k, N_of_S, 0))
+
+#define IS_DELETED(neighbor, node) (neighbor < node)
+
+#define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
+
+#define CHECK_N(elem) (inverted_N.count(elem))
 
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
@@ -31,9 +37,9 @@ std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
 }
 
 uint64_t solutions = 0;
-std::vector<bool> excluded;
-std::vector<bool> in_S;
-std::vector<bool> in_C;
+// std::vector<bool> excluded;
+// std::vector<bool> in_S;
+// std::vector<bool> in_C;
 //std::vector<bool> tmp;
 // std::vector<size_t> current_degree;
 
@@ -49,27 +55,19 @@ uint64_t max_sol_per_leaf = 0L;
 uint64_t count_min_leaf = 0L;
 uint64_t count_max_leaf = 0L;
 
-/* struct {
-    bool operator()(const node_t& lhs, const node_t& rhs) const {
-        if(current_degree[lhs] < current_degree[rhs])
-            return true;
-        else if(lhs < rhs)
-            return true;
-        
-        return false;
-    }
-} vertexCmp;*/
 
-bool enhanced(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
+bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
 
     // INV: S.size() <= k-2
 
     if(interrupted) return false; // Timer
 
-    if(start == N_of_S.size()) { leaves++; return false; } // No nuovi nodi
     auto end = N_of_S.size();
+    if(start == end) { leaves++; return false; } // No nuovi nodi
     bool found = false;
+
+    auto first_node = S.front();
 
     if(S.size() == k-1) {
         auto diff = end - start;
@@ -94,17 +92,25 @@ bool enhanced(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, 
 
     bool im_a_parent = false;
 
+    cuckoo_hash_set<node_t> inverted_N;
+    inverted_N.reserve(N_of_S.size()*2);
+    for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
+
     for(;start < end; start++) {
         if(interrupted) return false;
 
         auto old_size = N_of_S.size();
         auto v = N_of_S[start];
-        if(excluded[v] || /*graph->is_in_S(v)*/in_S[v]) continue;
+        
+        if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!in_C[neigh] && !excluded[neigh] && /*!graph->is_in_S(neigh)*/!in_S[neigh]) {
+            if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
                 N_of_S.push_back(neigh);
-                in_C[neigh] = true;
+                // in_C[neigh] = true;
+                // graph->put_in_N(neigh);
+                //in_N.insert(neigh);
+                inverted_N.insert(neigh);
                 tmp++;
             }
         }
@@ -116,15 +122,15 @@ bool enhanced(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, 
         if(start+1 < end+tmp) {
             // Chiamata sx
             S.push_back(v); 
-            in_S[v] = true;
+            // in_S[v] = true;
             // graph->put_in_S(v);
             
-            left = enhanced(S, graph, k, N_of_S, start+1);
+            left = enumeration_ultra(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
             S.pop_back();
-            in_S[v] = false;
+            // in_S[v] = false;
             // graph->remove_from_S(v);
             // excluded[v] = true;
             // std::cout << "Ora tolgo " << v << ", e left = " << left << std::endl;
@@ -138,7 +144,9 @@ bool enhanced(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, 
         
 
         while(N_of_S.size() > old_size) {
-            in_C[N_of_S.back()] = false;
+            // in_C[N_of_S.back()] = false;
+            // graph->remove_from_N(N_of_S.back());
+            inverted_N.erase(N_of_S.back());
             N_of_S.pop_back();
         }
         if(interrupted) return false;
@@ -168,51 +176,43 @@ bool enhanced(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, 
 void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k) {
     // std::set<node_t, vertexCmp> C_of_S;
     std::vector<node_t> N_of_S;
-    N_of_S.reserve(graph->size()/2);
+    N_of_S.reserve(graph->size()/10);
     for(auto v=0;v<graph->size()-k+1;v++) {
     
     /*for(auto v=103;v<104;v++) {
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
         S.push_back(v);
-        in_S[v] = true;
+        // in_S[v] = true;
         // graph->put_in_S(v);
         // Prima lista C(S)
         // Popolo C(S) con i vicini non esclusi di v
 
         for(auto& neigh : graph->fwd_neighs(v)) {
-            if(!excluded[neigh]) {
+            // if(!excluded[neigh]) {
+            // if(!graph->is_deleted(neigh)) {
+            if(!IS_DELETED(neigh, v)) { 
                 N_of_S.push_back(neigh);
                 // C_of_S.insert(neigh);
-                in_C[neigh] = true;
+                // in_C[neigh] = true;
+                // graph->put_in_N(neigh);
+                // in_N.insert(neigh);
             }
         }
-        // std::cout << "V è " << v << " e quindi i vicini sono: ";
-        // for(auto& n : C_of_S) std::cout << n << " ";
-        // std::cout << std::endl;
 
-        //enhanced(S, graph, k, C_of_S, 0);
-
-        // std::sort(C_of_S.begin(), C_of_S.end(), vertexCmp);
 
         START_REC;
         
         S.pop_back();
-        in_S[v] = false;
+
         // graph->remove_from_S(v);
 
-        excluded[v] = true;
-
-        // for(auto& neigh : graph->fwd_neighs(v)) {
-        //     if(!excluded[neigh]) {
-        //         current_degree[neigh]--;
-        //     }
-        // }
+        // no need to explicitly delete v
         
-        for(auto& v : N_of_S) in_C[v] = false;
+        // for(auto& v : N_of_S) graph->remove_from_N(v); 
         N_of_S.clear();
-        //solutions.clear();
-        //return;
+        // in_N.clear();
+
     }
 }
 
@@ -239,18 +239,17 @@ int main(int argc, char* argv[]) {
 
     std::vector<node_t> S;
 
-    excluded.resize(graph->size());
-    in_S.resize(graph->size());
-    in_C.resize(graph->size());
-    // current_degree.resize(graph->size());
-    // tmp.resize(graph->size(), false);
-
     if(!skip) std::cout << "Nodes: " << graph->size() << std::endl;
     size_t edges = 0;
+    size_t max_degree = 0;
     for(size_t i = 0;i < graph->size(); i++) {
         edges += graph->degree(i);
+        if(graph->degree(i) > max_degree) max_degree = graph->degree(i);
         // current_degree[i] = graph->degree(i);
     }
+
+    edges /= 2; // Undirected graph
+    // in_N.reserve(1.5*max_degree);
 
     if(!skip) std::cout << "Edges: " << edges << std::endl;
 
@@ -259,6 +258,8 @@ int main(int argc, char* argv[]) {
     signal(SIGALRM, [](int) { interrupted = true; });
     signal(SIGINT, [](int) { interrupted = true; });
     alarm(TIMEOUT); // Set timer 
+
+    std::cerr << "Graph read." << std::endl;
 
     __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
@@ -281,3 +282,4 @@ int main(int argc, char* argv[]) {
 
     return (interrupted ? 14 : 0);
 }
+
