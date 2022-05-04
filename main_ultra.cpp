@@ -19,12 +19,11 @@
 #define TIMEOUT (60 * 15) /* Timer 30 minutes */
 //#endif
 
-//#define START_REC (ciproviamo(S, graph, k, C_of_S, 0, 0))
 #define START_REC (enumeration_ultra(S, graph, k, N_of_S, 0))
 
 #define IS_DELETED(neighbor, node) (neighbor < node)
 
-#define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end())
+#define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end()) 
 
 #define CHECK_N(elem) (inverted_N.count(elem))
 
@@ -86,7 +85,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
             cuckoo_hash_set<node_t> inverted_N;
             inverted_N.reserve(N_of_S.size()*2);
-            for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
+            for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
 
 
             uint64_t contatore = 0;
@@ -97,20 +96,20 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
                 auto neighbors_of_u = graph->neighs(u);
 
-                for(auto& neigh : neighbors_of_u) {
+                for(auto& neigh : neighbors_of_u) { // Spostare IS_DELETED come prima condizione
                     if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
-                        deg_u++; // Step 2
+                        deg_u++; // Step 2 -> sono in N^2(S) attraverso u -> 1 + 2 + 0
 
                         for(auto& v : graph->neighs(neigh)) {
                             if(!CHECK_N(v) && !IS_DELETED(v, first_node) && !IN_ARRAY(v, S) && !graph->are_neighs(u, v)) {
-                                diff++; // Step 4
+                                diff++; // Step 4 -> 1 + 1 + 1 
                             }
                         }
                         // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j];
                             if(v != neigh && !graph->are_neighs(neigh, v) && v != u) {
-                                contatore++;
+                                contatore++; // 2 + 1 + 0
                             }
                         }
                     }
@@ -168,9 +167,10 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             }
         }
         else {
+            // 2 + 0
             diff = (neighbors) * (neighbors - 1) / 2; // Questi sono quelli che posso fare a distanza 1
             
-            for(int i=start;i<end;i++) {
+            for(int i=start;i<end;i++) { // 1 + 1
                 auto u = N_of_S[i];
                 for(auto& neigh : graph->neighs(u)) {
                     if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
