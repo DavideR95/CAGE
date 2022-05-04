@@ -19,7 +19,7 @@
 #define TIMEOUT (60 * 15) /* Timer 30 minutes */
 //#endif
 
-#define START_REC (enumeration_ultra(S, graph, k, N_of_S, 0))
+#define START_REC (baseline_pp(S, graph, k, N_of_S, 0))
 
 #define IS_DELETED(neighbor, node) (neighbor < node)
 
