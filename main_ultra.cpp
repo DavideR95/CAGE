@@ -110,6 +110,7 @@ bool baseline_pp(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int 
         if(start+1 < end+tmp) {
             // Chiamata sx
             S.push_back(v); 
+            inverted_N.insert(v);
             // in_S[v] = true;
             // graph->put_in_S(v);
             
@@ -118,6 +119,7 @@ bool baseline_pp(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int 
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
             S.pop_back();
+            inverted_N.erase(v);
             // in_S[v] = false;
             // graph->remove_from_S(v);
             // excluded[v] = true;
@@ -171,6 +173,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
         S.push_back(v);
+        inverted_N.insert(v);
         // in_S[v] = true;
         // graph->put_in_S(v);
         // Prima lista C(S)
@@ -192,6 +195,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         START_REC;
         
         S.pop_back();
+        inverted_N.erase(v);
 
         // graph->remove_from_S(v);
 
