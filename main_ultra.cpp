@@ -163,10 +163,10 @@ bool baseline_pp(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int 
 
 
 
-void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k) {
+void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, size_t degeneracy) {
     // std::set<node_t, vertexCmp> C_of_S;
     std::vector<node_t> N_of_S;
-    N_of_S.reserve(graph->size()/10);
+    N_of_S.reserve(degeneracy);
     for(node_t v=0;v<graph->size()-k+1;v++) {
     
     /*for(auto v=103;v<104;v++) {
@@ -195,7 +195,6 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         START_REC;
         
         S.pop_back();
-        inverted_N.erase(v);
 
         // graph->remove_from_S(v);
 
@@ -258,7 +257,7 @@ int main(int argc, char* argv[]) {
     __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
 
-    main_enum(S, graph.get(), k);
+    main_enum(S, graph.get(), k, deg);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
     __itt_pause();
