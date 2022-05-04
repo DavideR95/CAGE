@@ -9,6 +9,8 @@
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
+#include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
+
 #ifndef TIMEOUT
 #define TIMEOUT (60 * 15) /* Timer 30 minutes */
 #endif
@@ -149,7 +151,7 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
-
+    __itt_pause();
     bool skip = false;
     int k;
 
@@ -200,18 +202,22 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, [](int) { interrupted = true; });
     alarm(TIMEOUT); // Set timer 
 
+    std::cerr << "Graph read." << std::endl;
+
+    __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
 
     main_enum(&S, graph.get(), k);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
+    __itt_pause();
 
-    std::cerr << "Found " << counter << " graphlets of size " << k;
-    std::cerr << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
-    std::cerr << "Recursion nodes - rec. roots: " << ricorsioni << " - " << graph->size() << " = " << ricorsioni-graph->size() << std::endl;
+    std::cout << "Found " << counter << " graphlets of size " << k;
+    std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
+    std::cout << "Recursion nodes - rec. roots: " << ricorsioni << " - " << graph->size() << " = " << ricorsioni-graph->size() << std::endl;
     //std::cerr << "Solutions per sec: " << counter / std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() * 1000 << std::endl;
-    std::cerr << "Leaves: " << leaves << " fruitful leaves: " << counter << " dead leaves: " << leaves-counter << std::endl;
-    std::cerr << "Graphlets/leaves ratio: " << (double) counter / leaves << std::endl;
+    std::cout << "Leaves: " << leaves << " fruitful leaves: " << counter << " dead leaves: " << leaves-counter << std::endl;
+    std::cout << "Graphlets/leaves ratio: " << (double) counter / leaves << std::endl;
 
     return (interrupted ? 14 : 0);
 }
