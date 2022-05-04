@@ -25,7 +25,7 @@
 
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end()) 
 
-#define CHECK_N(elem) (inverted_N.count(elem))
+#define IS_IN_N_OR_S(elem) (inverted_N.count(elem))
 
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
@@ -54,6 +54,7 @@ uint64_t max_sol_per_leaf = 0L;
 uint64_t count_min_leaf = 0L;
 uint64_t count_max_leaf = 0L;
 
+cuckoo_hash_set<node_t> inverted_N;
 
 bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
@@ -83,9 +84,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
             std::vector<bool> inverted_N(next_prime+1, false);
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-            cuckoo_hash_set<node_t> inverted_N;
-            inverted_N.reserve(N_of_S.size()*2);
+            inverted_N.clear()
             for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
+            for(auto& v : S) inverted_N.insert(v);
 
 
             uint64_t contatore = 0;
@@ -97,11 +98,11 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                 auto neighbors_of_u = graph->neighs(u);
 
                 for(auto& neigh : neighbors_of_u) { // Spostare IS_DELETED come prima condizione
-                    if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                    if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
                         deg_u++; // Step 2 -> sono in N^2(S) attraverso u -> 1 + 2 + 0
 
                         for(auto& v : graph->neighs(neigh)) {
-                            if(!CHECK_N(v) && !IS_DELETED(v, first_node) && !IN_ARRAY(v, S) && !graph->are_neighs(u, v)) {
+                            if(!IS_DELETED(v, first_node) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
                                 diff++; // Step 4 -> 1 + 1 + 1 
                             }
                         }
@@ -122,7 +123,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     
                     if(u != v) {
                         for(auto& neigh : graph->neighs(v)) {
-                            if(neigh != u && !CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
                                 contatore++;
                             }
                         }
@@ -154,14 +155,14 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
         std::vector<bool> inverted_N(next_prime+1, false);
         for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-        cuckoo_hash_set<node_t> inverted_N;
-        inverted_N.reserve(N_of_S.size()*2);
+        inverted_N.clear();
         for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
+        for(auto& v : S) inverted_N.insert(v);
 
         if(neighbors == 1) {
             for(auto& neigh : graph->neighs(N_of_S[start])) {
                 // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
-                if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
                     diff++;
                 }
             }
@@ -173,7 +174,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             for(int i=start;i<end;i++) { // 1 + 1
                 auto u = N_of_S[i];
                 for(auto& neigh : graph->neighs(u)) {
-                    if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+                    if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
                         diff++;
                     }
                 }
@@ -194,9 +195,11 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     bool im_a_parent = false;
 
-    cuckoo_hash_set<node_t> inverted_N;
-    inverted_N.reserve(N_of_S.size()*2);
+    // cuckoo_hash_set<node_t> inverted_N;
+    // inverted_N.reserve(N_of_S.size()*2);
+    inverted_N.clear();
     for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
+    for(auto& v : S) inverted_N.insert(v);
 
     for(;start < end; start++) {
         if(interrupted) return false;
@@ -207,7 +210,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!CHECK_N(neigh) && !IS_DELETED(neigh, first_node) && !IN_ARRAY(neigh, S)) {
+            if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
                 N_of_S.push_back(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
@@ -351,7 +354,7 @@ int main(int argc, char* argv[]) {
     }
 
     edges /= 2; // Undirected graph
-    // in_N.reserve(1.5*max_degree);
+    inverted_N.reserve(2*max_degree);
 
     if(!skip) std::cout << "Edges: " << edges << std::endl;
 
