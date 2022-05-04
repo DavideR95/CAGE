@@ -68,7 +68,6 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
         auto old_size = C_of_S.size();
         auto v = C_of_S[start];
-        if(graph->is_in_S(v)) { }
         if(excluded[v] || in_S[v]) continue;
         for(auto& neigh : graph->neighs(v)) {
             if(!in_C[neigh] && !excluded[neigh] && !in_S[neigh]) {
