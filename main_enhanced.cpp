@@ -10,7 +10,7 @@
 #include "permute/permute.hpp"
 
 #ifndef TIMEOUT
-#define TIMEOUT (60 * 30) /* Timer 30 minutes */
+#define TIMEOUT (60 * 15) /* Timer 30 minutes */
 #endif
 
 //#define START_REC (ciproviamo(S, graph, k, C_of_S, 0, 0))
