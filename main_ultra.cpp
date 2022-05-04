@@ -56,7 +56,7 @@ uint64_t count_max_leaf = 0L;
 
 cuckoo_hash_set<node_t> inverted_N;
 
-bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
+bool baseline_pp(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++;
 
     // INV: S.size() <= k-2
@@ -80,9 +80,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     // cuckoo_hash_set<node_t> inverted_N;
     // inverted_N.reserve(N_of_S.size()*2);
-    inverted_N.clear();
+    /*inverted_N.clear();
     for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
-    for(auto& v : S) inverted_N.insert(v);
+    for(auto& v : S) inverted_N.insert(v);*/
 
     for(;start < end; start++) {
         if(interrupted) return false;
@@ -90,10 +90,10 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         auto old_size = N_of_S.size();
         auto v = N_of_S[start];
         
-        if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
+        if(IS_DELETED(v, S.front()) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
+            if(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh)) {
                 N_of_S.push_back(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
@@ -113,7 +113,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             // in_S[v] = true;
             // graph->put_in_S(v);
             
-            left = enumeration_ultra(S, graph, k, N_of_S, start+1);
+            left = baseline_pp(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
@@ -184,7 +184,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
-                // in_N.insert(neigh);
+                inverted_N.insert(neigh);
             }
         }
 
@@ -199,7 +199,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         
         // for(auto& v : N_of_S) graph->remove_from_N(v); 
         N_of_S.clear();
-        // in_N.clear();
+        inverted_N.clear();
 
     }
 }
