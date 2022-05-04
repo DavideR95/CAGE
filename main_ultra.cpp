@@ -167,7 +167,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
     // std::set<node_t, vertexCmp> C_of_S;
     std::vector<node_t> N_of_S;
     N_of_S.reserve(graph->size()/10);
-    for(auto v=0;v<graph->size()-k+1;v++) {
+    for(node_t v=0;v<graph->size()-k+1;v++) {
     
     /*for(auto v=103;v<104;v++) {
         for(auto i=0;i<v;i++) excluded[i] = true;*/
