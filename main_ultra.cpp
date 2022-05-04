@@ -347,9 +347,11 @@ int main(int argc, char* argv[]) {
     if(!skip) std::cout << "Nodes: " << graph->size() << std::endl;
     size_t edges = 0;
     size_t max_degree = 0;
+    size_t deg = 0;
     for(size_t i = 0;i < graph->size(); i++) {
         edges += graph->degree(i);
         if(graph->degree(i) > max_degree) max_degree = graph->degree(i);
+        if(graph->fwd_degree(i) > deg) deg = graph->fwd_degree(i);
         // current_degree[i] = graph->degree(i);
     }
 
