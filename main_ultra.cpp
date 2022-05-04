@@ -364,7 +364,7 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, [](int) { interrupted = true; });
     alarm(TIMEOUT); // Set timer 
 
-    std::cerr << "Graph read." << std::endl;
+    std::cerr << "Graph read, max degree: " << max_degree << " degeneracy: " << deg << std::endl;
 
     __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
