@@ -74,6 +74,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
     if(start == end) { leaves++; return false; } // No nuovi nodi
     bool found = false;
 
+    auto first_node = S.front();
 
     bool im_a_parent = false;
 
