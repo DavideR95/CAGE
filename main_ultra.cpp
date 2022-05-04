@@ -61,137 +61,19 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     // INV: S.size() <= k-2
 
+    if(S.size() == k) {
+        solutions++;
+        leaves++;
+        fruitful_leaves++;
+        return true;
+    }
+
     if(interrupted) return false; // Timer
 
     auto end = N_of_S.size();
     if(start == end) { leaves++; return false; } // No nuovi nodi
     bool found = false;
 
-    auto first_node = S.front();
-
-    if(S.size() == k-3) {
-        uint64_t diff = 0;
-        auto neighbors = end - start;
-
-        // Caso 1: 3 nodi a distanza 1
-        diff += (neighbors * (neighbors - 1) * (neighbors - 2)) / 6; // Se ci sono 1 o 2 neighbors fa zero e va bene
-        
-        // Caso 2: un nodo a distanza 1 e due a distanza 2:
-
-        // Caso 3: due nodi a distanza 1 e uno a distanza 2:
-        if(neighbors > 0) {
-
-            /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
-            std::vector<bool> inverted_N(next_prime+1, false);
-            for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-            inverted_N.clear();
-            for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
-            for(auto& v : S) inverted_N.insert(v);
-
-
-            uint64_t contatore = 0;
-            for(int i=start;i<end;i++) {
-                if(interrupted) break;
-                auto u = N_of_S[i];
-                uint64_t deg_u = 0;
-
-                auto neighbors_of_u = graph->neighs(u);
-
-                for(auto& neigh : neighbors_of_u) { // Spostare IS_DELETED come prima condizione
-                    if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
-                        deg_u++; // Step 2 -> sono in N^2(S) attraverso u -> 1 + 2 + 0
-
-                        for(auto& v : graph->neighs(neigh)) {
-                            if(!IS_DELETED(v, first_node) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
-                                diff++; // Step 4 -> 1 + 1 + 1 
-                            }
-                        }
-                        // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
-                        for(int j=start;j<end;j++) {
-                            auto v = N_of_S[j];
-                            if(v != neigh && !graph->are_neighs(neigh, v) && v != u) {
-                                contatore++; // 2 + 1 + 0
-                            }
-                        }
-                    }
-                    if(interrupted) break;
-                }
-                diff += (deg_u * (deg_u - 1)) / 2;
-
-                /*for(int j=start;j<end;j++) { // Step 3
-                    auto v = N_of_S[j];
-                    
-                    if(u != v) {
-                        for(auto& neigh : graph->neighs(v)) {
-                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
-                                contatore++;
-                            }
-                        }
-                    }
-
-                    if(interrupted) break;
-                }*/
-            }
-            diff += contatore; // / 2;
-        }
-
-        // Caso 4: uno + uno + uno
-
-        solutions += diff;
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
-        else if(diff == min_sol_per_leaf) count_min_leaf++;
-        if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
-        else if(diff == max_sol_per_leaf) count_max_leaf++;
-
-        leaves++;
-        if(diff > 0) fruitful_leaves++;
-        return (diff > 0);
-    }
-
-    if(S.size() == k-2) {
-        auto neighbors = N_of_S.size() - start;
-        uint64_t diff = 0;
-
-        /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
-        std::vector<bool> inverted_N(next_prime+1, false);
-        for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-        inverted_N.clear();
-        for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
-        for(auto& v : S) inverted_N.insert(v);
-
-        if(neighbors == 1) {
-            for(auto& neigh : graph->neighs(N_of_S[start])) {
-                // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
-                if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
-                    diff++;
-                }
-            }
-        }
-        else {
-            // 2 + 0
-            diff = (neighbors) * (neighbors - 1) / 2; // Questi sono quelli che posso fare a distanza 1
-            
-            for(int i=start;i<end;i++) { // 1 + 1
-                auto u = N_of_S[i];
-                for(auto& neigh : graph->neighs(u)) {
-                    if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
-                        diff++;
-                    }
-                }
-                if(interrupted) break;
-            }
-        } 
-
-        solutions += diff; 
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
-        else if(diff == min_sol_per_leaf) count_min_leaf++;
-        if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
-        else if(diff == max_sol_per_leaf) count_max_leaf++;
-
-        leaves++;
-        if(diff > 0) fruitful_leaves++;
-        return (diff > 0);
-    } 
 
     bool im_a_parent = false;
 
