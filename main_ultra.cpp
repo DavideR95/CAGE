@@ -109,7 +109,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                         // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j];
-                            if(v != neigh && !graph->are_neighs(neigh, v) && v != u) {
+                            if(v != u && v != neigh && !graph->are_neighs(neigh, v)) {
                                 contatore++; // 2 + 1 + 0
                             }
                         }
@@ -117,20 +117,6 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     if(interrupted) break;
                 }
                 diff += (deg_u * (deg_u - 1)) / 2;
-
-                /*for(int j=start;j<end;j++) { // Step 3
-                    auto v = N_of_S[j];
-                    
-                    if(u != v) {
-                        for(auto& neigh : graph->neighs(v)) {
-                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
-                                contatore++;
-                            }
-                        }
-                    }
-
-                    if(interrupted) break;
-                }*/
             }
             diff += contatore; // / 2;
         }
@@ -152,16 +138,12 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         auto neighbors = N_of_S.size() - start;
         uint64_t diff = 0;
 
-        /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
-        std::vector<bool> inverted_N(next_prime+1, false);
-        for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
         inverted_N.clear();
         for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
         for(auto& v : S) inverted_N.insert(v);
 
         if(neighbors == 1) {
             for(auto& neigh : graph->neighs(N_of_S[start])) {
-                // if(!in_C[neigh] && !excluded[neigh] && !graph->is_in_S(neigh)/*!in_S[neigh]*/) {
                 if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
                     diff++;
                 }
@@ -212,18 +194,13 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         for(auto& neigh : graph->neighs(v)) {
             if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
                 N_of_S.push_back(neigh);
-                // in_C[neigh] = true;
-                // graph->put_in_N(neigh);
-                //in_N.insert(neigh);
                 inverted_N.insert(neigh);
                 tmp++;
             }
         }
 
-        // if(tmp == 0 && ) { std::cout << "\t\t\tAAAA\n"; ; }
-
         bool left;
-        // std::cout << "Ora dovrei prendere " << v << std::endl;
+
         if(start+1 < end+tmp) {
             // Chiamata sx
             S.push_back(v); 
@@ -241,9 +218,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             // std::cout << "Ora tolgo " << v << ", e left = " << left << std::endl;
         }
         else {
-            // std::cout << "(Non ho fatto nulla) " << std::endl;
             left = false;
-            // std::cout << "E quindi found = " << found << std::endl;
         }
 
         
