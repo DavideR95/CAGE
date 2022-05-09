@@ -192,9 +192,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     // cuckoo_hash_set<node_t> inverted_N;
     // inverted_N.reserve(N_of_S.size()*2);
-    /*inverted_N.clear();
+    inverted_N.clear();
     for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
-    for(auto& v : S) inverted_N.insert(v);*/
+    for(auto& v : S) inverted_N.insert(v);
 
     for(;start < end; start++) {
         if(interrupted) return false;
@@ -219,13 +219,13 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             S.push_back(v); 
             // in_S[v] = true;
             // graph->put_in_S(v);
-            inverted_N.insert(v);
+            //inverted_N.insert(v);
             left = enumeration_ultra(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
             S.pop_back();
-            inverted_N.erase(v);
+            //inverted_N.erase(v);
             // in_S[v] = false;
             // graph->remove_from_S(v);
             // excluded[v] = true;
@@ -277,7 +277,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
         S.push_back(v);
-        inverted_N.insert((node_t&)v);
+        //inverted_N.insert((node_t&)v);
         // in_S[v] = true;
         // graph->put_in_S(v);
         // Prima lista C(S)
@@ -291,7 +291,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
-                inverted_N.insert(neigh);
+                //inverted_N.insert(neigh);
             }
         }
 
