@@ -116,9 +116,22 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     }
                     if(interrupted) break;
                 }
+                for(int j=start;j<end;j++) { // Step 3
+                     auto v = N_of_S[j];
+                     
+                     if(u != v) {
+                        for(auto& neigh : graph->neighs(v)) {
+                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
+                                contatore++;
+                            }
+                        }
+                     }
+
+                     if(interrupted) break;
+                 }
                 diff += (deg_u * (deg_u - 1)) / 2;
             }
-            diff += contatore; // / 2;
+            diff += contatore / 2;
         }
 
         // Caso 4: uno + uno + uno
