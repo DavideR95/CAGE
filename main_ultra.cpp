@@ -265,7 +265,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k,
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
         S.push_back(v);
-        inverted_N.insert(v);
+        inverted_N.insert((node_t)v);
         // in_S[v] = true;
         // graph->put_in_S(v);
         // Prima lista C(S)
