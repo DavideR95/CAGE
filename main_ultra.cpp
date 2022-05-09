@@ -84,9 +84,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
             std::vector<bool> inverted_N(next_prime+1, false);
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-            inverted_N.clear();
-            for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
-            for(auto& v : S) inverted_N.insert(v);
+            //inverted_N.clear();
+            //for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
+            //for(auto& v : S) inverted_N.insert(v);
 
 
             uint64_t contatore = 0;
@@ -179,9 +179,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     // cuckoo_hash_set<node_t> inverted_N;
     // inverted_N.reserve(N_of_S.size()*2);
-    inverted_N.clear();
+    /*inverted_N.clear();
     for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
-    for(auto& v : S) inverted_N.insert(v);
+    for(auto& v : S) inverted_N.insert(v);*/
 
     for(;start < end; start++) {
         if(interrupted) return false;
@@ -206,12 +206,14 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             S.push_back(v); 
             // in_S[v] = true;
             // graph->put_in_S(v);
+            inverted_N.insert(v);
             
             left = enumeration_ultra(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
             S.pop_back();
+            inverted_N.erase(v);
             // in_S[v] = false;
             // graph->remove_from_S(v);
             // excluded[v] = true;
@@ -253,16 +255,17 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
 
 
-void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k) {
+void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, size_t max_degree) {
     // std::set<node_t, vertexCmp> C_of_S;
     std::vector<node_t> N_of_S;
-    N_of_S.reserve(graph->size()/10);
+    N_of_S.reserve(2*max_degree);
     for(auto v=0;v<graph->size()-k+1;v++) {
     
     /*for(auto v=103;v<104;v++) {
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
         S.push_back(v);
+        inverted_N.insert(v);
         // in_S[v] = true;
         // graph->put_in_S(v);
         // Prima lista C(S)
@@ -276,7 +279,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
                 // graph->put_in_N(neigh);
-                // in_N.insert(neigh);
+                inverted_N.insert(neigh);
             }
         }
 
@@ -291,7 +294,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         
         // for(auto& v : N_of_S) graph->remove_from_N(v); 
         N_of_S.clear();
-        // in_N.clear();
+        inverted_N.clear();
 
     }
 }
@@ -346,7 +349,7 @@ int main(int argc, char* argv[]) {
     __itt_resume();
     auto start = std::chrono::high_resolution_clock::now();
 
-    main_enum(S, graph.get(), k);
+    main_enum(S, graph.get(), k, max_degree);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
     __itt_pause();
