@@ -192,9 +192,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     // cuckoo_hash_set<node_t> inverted_N;
     // inverted_N.reserve(N_of_S.size()*2);
-    inverted_N.clear();
-    for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
-    for(auto& v : S) inverted_N.insert(v);
+    // inverted_N.clear();
+    // for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
+    // for(auto& v : S) inverted_N.insert(v);
 
     for(;start < end; start++) {
         if(interrupted) return false;
