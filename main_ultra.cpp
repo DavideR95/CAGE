@@ -84,9 +84,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
             std::vector<bool> inverted_N(next_prime+1, false);
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-            /*inverted_N.clear();
+            inverted_N.clear();
             for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
-            for(auto& v : S) inverted_N.insert(v);*/
+            for(auto& v : S) inverted_N.insert(v);
 
 
             uint64_t contatore = 0;
