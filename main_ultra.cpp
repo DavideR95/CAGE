@@ -39,7 +39,7 @@ uint64_t solutions = 0;
 // std::vector<bool> excluded;
 // std::vector<bool> in_S;
 // std::vector<bool> in_C;
-//std::vector<bool> tmp;
+// std::vector<bool> tmp;
 // std::vector<size_t> current_degree;
 
 bool interrupted = false; // Timer
@@ -219,13 +219,13 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             S.push_back(v); 
             // in_S[v] = true;
             // graph->put_in_S(v);
-            //inverted_N.insert(v);
+            inverted_N.insert(v);
             left = enumeration_ultra(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
             S.pop_back();
-            //inverted_N.erase(v);
+            inverted_N.erase(v);
             // in_S[v] = false;
             // graph->remove_from_S(v);
             // excluded[v] = true;
