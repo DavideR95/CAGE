@@ -86,7 +86,8 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
             /*inverted_N.clear();
             for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
-            for(auto& v : S) inverted_N.insert(v);*/
+            */
+            for(auto& v : S) inverted_N.insert(v);
 
 
             uint64_t contatore = 0;
@@ -133,6 +134,8 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             }
             diff += contatore / 2;
         }
+
+        for(auto& v : S) inverted_N.erase(v);
 
         // Caso 4: uno + uno + uno
 
@@ -205,7 +208,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
+            if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh) && !IN_ARRAY(neigh, S)) {
                 N_of_S.push_back(neigh);
                 inverted_N.insert(neigh);
                 tmp++;
@@ -219,13 +222,13 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             S.push_back(v); 
             // in_S[v] = true;
             // graph->put_in_S(v);
-            inverted_N.insert(v);
+            //inverted_N.insert(v);
             left = enumeration_ultra(S, graph, k, N_of_S, start+1);
             
             im_a_parent = true;
             // std::cout << "Finita la rec call di " << S->back() << std::endl;
             S.pop_back();
-            inverted_N.erase(v);
+            //inverted_N.erase(v);
             // in_S[v] = false;
             // graph->remove_from_S(v);
             // excluded[v] = true;
@@ -277,7 +280,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         for(auto i=0;i<v;i++) excluded[i] = true;*/
         if(interrupted) return; // Timer 
         S.push_back(v);
-        inverted_N.insert((node_t&)v);
+        //inverted_N.insert((node_t&)v);
         // in_S[v] = true;
         // graph->put_in_S(v);
         // Prima lista C(S)
