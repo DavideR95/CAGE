@@ -133,9 +133,10 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                 diff += (deg_u * (deg_u - 1)) / 2;
             }
             diff += contatore / 2;
+            for(auto& v : S) inverted_N.erase(v);
         }
 
-        for(auto& v : S) inverted_N.erase(v);
+        
 
         // Caso 4: uno + uno + uno
 
