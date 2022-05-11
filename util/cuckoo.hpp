@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <iostream>
-#if defined(__x86_64__) && defined(__AVX2__)
+#if defined(__AVX2__)
 #include <immintrin.h>
 #else
 #define SIMDE_ENABLE_NATIVE_ALIASES
