@@ -371,7 +371,7 @@ class fast_graph_t : public graph_t<node_t_, label_t> {
     return absl::Span<const node_t>(beg, end - beg);
   }
 
-  const cuckoo_hash_set<node_t>& neighs(node_t i) const { return edges_[i]; }
+  //const cuckoo_hash_set<node_t>& neighs(node_t i) const { return edges_[i]; }
   bool are_neighs(node_t a, node_t b) const { return edges_[a].count(b); }
   size_t get_rehashes() { 
     size_t total = 0;

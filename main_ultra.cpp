@@ -12,8 +12,9 @@
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
+#ifdef __INTEL_COMPILER
 #include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
-
+#endif
 
 //#ifndef TIMEOUT
 #define TIMEOUT (60 * 15) /* Timer 30 minutes */
@@ -109,27 +110,32 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                         // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j];
-                            if(v != u && v != neigh && !graph->are_neighs(neigh, v)) {
+                            if(v != u && v != neigh) {
+                                if(!graph->are_neighs(neigh, v))
+                                    diff++; // 2 + 1 + 0
+                                else 
+                                    contatore++;
+                            }
+                        }
+                        
+                    }
+                    if(interrupted) break;
+                }
+                /*for(int j=start;j<end;j++) { // Step 3
+                    auto v = N_of_S[j];
+                     
+                    if(u != v) {
+                        for(auto& neigh : graph->neighs(v)) {
+                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
                                 contatore++; // 2 + 1 + 0
                             }
                         }
                     }
-                    if(interrupted) break;
-                }
-                for(int j=start;j<end;j++) { // Step 3
-                     auto v = N_of_S[j];
-                     
-                     if(u != v) {
-                        for(auto& neigh : graph->neighs(v)) {
-                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
-                                contatore++;
-                            }
-                        }
-                     }
 
-                     if(interrupted) break;
-                 }
+                    if(interrupted) break;
+                }*/
                 diff += (deg_u * (deg_u - 1)) / 2;
+                //contatore += deg_u;
             }
             diff += contatore / 2;
             
@@ -315,7 +321,9 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
+#ifdef __INTEL_COMPILER
     __itt_pause();
+#endif
     bool skip = false;
     int k;
 
@@ -360,14 +368,17 @@ int main(int argc, char* argv[]) {
     alarm(TIMEOUT); // Set timer 
 
     std::cerr << "Graph read, max degree: " << max_degree << " degeneracy: " << deg << std::endl;
-
+#ifdef __INTEL_COMPILER
     __itt_resume();
+#endif
     auto start = std::chrono::high_resolution_clock::now();
 
     main_enum(S, graph.get(), k);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
-    __itt_pause();
+#ifdef __INTEL_COMPILER    
+__itt_pause();
+#endif
 
     std::cout << "Found " << solutions << " graphlets of size " << k;
     std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;

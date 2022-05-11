@@ -6,11 +6,11 @@ project(graphlet)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -shared-intel")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -O3 -march=armv8-a+simd")
 
-include_directories(/opt/intel/oneapi/vtune/latest/sdk/include)
+#include_directories(/opt/intel/oneapi/vtune/latest/sdk/include)
 # link_directories(/opt/intel/oneapi/vtune/latest/sdk/lib32)
-link_directories(/opt/intel/oneapi/vtune/latest/sdk/lib64)
+#link_directories(/opt/intel/oneapi/vtune/latest/sdk/lib64)
 
 
 add_subdirectory(third_party/abseil-cpp)
@@ -44,5 +44,5 @@ add_executable(baseline_delete main_deletion.cpp)
 target_link_libraries(baseline_delete lib)
 
 add_executable(baseline_ultra main_ultra.cpp)
-target_link_libraries(baseline_ultra lib libittnotify.a dl pthread)
+target_link_libraries(baseline_ultra lib)
 

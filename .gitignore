@@ -44,3 +44,5 @@
 .vscode/
 
 **/test_data
+
+**/simde

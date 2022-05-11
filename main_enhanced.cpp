@@ -9,7 +9,9 @@
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
+#ifdef __INTEL_COMPILER
 #include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
+#endif
 
 #ifndef TIMEOUT
 #define TIMEOUT (60 * 15) /* Timer 30 minutes */
@@ -151,7 +153,9 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
+#ifdef __INTEL_COMPILER
     __itt_pause();
+#endif
     bool skip = false;
     int k;
 
@@ -203,14 +207,17 @@ int main(int argc, char* argv[]) {
     alarm(TIMEOUT); // Set timer 
 
     std::cerr << "Graph read." << std::endl;
-
+#ifdef __INTEL_COMPILER
     __itt_resume();
+#endif
     auto start = std::chrono::high_resolution_clock::now();
 
     main_enum(&S, graph.get(), k);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
+#ifdef __INTEL_COMPILER
     __itt_pause();
+#endif
 
     std::cout << "Found " << counter << " graphlets of size " << k;
     std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
