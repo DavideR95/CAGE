@@ -12,7 +12,7 @@
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
 #endif
 
@@ -321,7 +321,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
     __itt_pause();
 #endif
     bool skip = false;
@@ -368,7 +368,7 @@ int main(int argc, char* argv[]) {
     alarm(TIMEOUT); // Set timer 
 
     std::cerr << "Graph read, max degree: " << max_degree << " degeneracy: " << deg << std::endl;
-#ifdef __INTEL_COMPILER
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
     __itt_resume();
 #endif
     auto start = std::chrono::high_resolution_clock::now();
@@ -376,7 +376,7 @@ int main(int argc, char* argv[]) {
     main_enum(S, graph.get(), k);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
-#ifdef __INTEL_COMPILER    
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)   
 __itt_pause();
 #endif
 
