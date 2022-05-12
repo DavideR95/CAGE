@@ -450,15 +450,15 @@ class fast_graph_t : public graph_t<node_t_, label_t> {
   dynarray<cuckoo_hash_set<node_t>> deleted_;
 };
 
-template <typename node_t = uint32_t, typename label_t = void,
+template <typename node_t = uint32_t, 
           template <typename, typename> class Graph = fast_graph_t>
-std::unique_ptr<Graph<node_t, label_t>> ReadOlympiadsFormat(
+std::unique_ptr<Graph<node_t, void>> ReadOlympiadsFormat(
     FILE* in = stdin, bool directed = false, bool one_based = false) {
   node_t N = fastio::FastRead<node_t>(in);
-  fastio::FastRead<node_t>(in);
-  auto labels = graph_internal::ReadLabels<node_t, label_t>(in, N);
+  // fastio::FastRead<node_t>(in); SKIP READING EDGES
+  auto labels = graph_internal::ReadLabels<node_t, void>(in, N);
   auto edges = graph_internal::ReadEdgeList<node_t>(in, directed, one_based, N);
-  return absl::make_unique<Graph<node_t, label_t>>(N, edges, labels);
+  return absl::make_unique<Graph<node_t, void>>(N, edges, labels);
 }
 
 template <typename node_t = uint32_t,

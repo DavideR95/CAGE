@@ -30,10 +30,10 @@
 
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
-    const std::string& input_file, bool directed = false) {
+    const std::string& input_file, bool nde = true, bool directed = false) {
     FILE* in = fopen(input_file.c_str(), "re");
     if (!in) throw std::runtime_error("Could not open " + input_file);
-    return ReadNde<node_t, fast_graph_t>(in, directed);
+    return (nde) ? ReadNde<node_t, fast_graph_t>(in, directed) : ReadOlympiadsFormat<node_t, fast_graph_t>(in, directed);
 }
 
 uint64_t solutions = 0;
@@ -214,7 +214,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
         size_t tmp = 0;
         for(auto& neigh : graph->neighs(v)) {
-            if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh) && !IN_ARRAY(neigh, S)) {
+            if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
                 N_of_S.push_back(neigh);
                 inverted_N.insert(neigh);
                 tmp++;
@@ -324,7 +324,7 @@ int main(int argc, char* argv[]) {
 #if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
     __itt_pause();
 #endif
-    bool skip = false;
+    bool is_nde = true;
     int k;
 
     switch(argc) {
@@ -333,7 +333,7 @@ int main(int argc, char* argv[]) {
             break;
         case 4:
             k = std::stoi(argv[2]);
-            skip = true;
+            is_nde = false;
             break;
         default: 
             std::cerr << "Usage: " << argv[0] << " <graph_file.nde> <k> [Skip Printing Graph Info]" << std::endl;
@@ -341,11 +341,11 @@ int main(int argc, char* argv[]) {
     }
     
 
-    auto graph = ReadFastGraph<node_t, void>(argv[1]);
+    auto graph = ReadFastGraph<node_t, void>(argv[1], is_nde);
 
     std::vector<node_t> S;
 
-    if(!skip) std::cout << "Nodes: " << graph->size() << std::endl;
+    std::cout << "Nodes: " << graph->size() << std::endl;
     size_t edges = 0;
     size_t max_degree = 0;
     size_t deg = 0;
@@ -359,7 +359,7 @@ int main(int argc, char* argv[]) {
     edges /= 2; // Undirected graph
     inverted_N.reserve(2*max_degree);
 
-    if(!skip) std::cout << "Edges: " << edges << std::endl;
+    std::cout << "Edges: " << edges << std::endl;
 
     graph->Permute(DegeneracyOrder(*graph));
 
