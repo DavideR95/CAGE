@@ -16,6 +16,9 @@
 #include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
 #endif
 
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
+
 //#ifndef TIMEOUT
 #define TIMEOUT (60 * 15) /* Timer 30 minutes */
 //#endif
@@ -62,7 +65,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     // INV: S.size() <= k-2
 
-    if(interrupted) return false; // Timer
+    if(unlikely(interrupted)) return false; // Timer
 
     auto end = N_of_S.size();
     if(start == end) { leaves++; return false; } // No nuovi nodi
@@ -80,7 +83,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         // Caso 2: un nodo a distanza 1 e due a distanza 2:
 
         // Caso 3: due nodi a distanza 1 e uno a distanza 2:
-        if(neighbors > 0) {
+        if(likely(neighbors > 0)) {
 
             /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
             std::vector<bool> inverted_N(next_prime+1, false);
@@ -92,7 +95,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
             uint64_t contatore = 0;
             for(int i=start;i<end;i++) {
-                if(interrupted) break;
+                if(unlikely(interrupted)) break;
                 auto u = N_of_S[i];
                 uint64_t deg_u = 0;
 
@@ -111,7 +114,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j];
                             if(v != u && v != neigh) {
-                                if(!graph->are_neighs(neigh, v))
+                                if(likely(!graph->are_neighs(neigh, v)))
                                     diff++; // 2 + 1 + 0
                                 else 
                                     contatore++;
@@ -119,7 +122,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                         }
                         
                     }
-                    if(interrupted) break;
+                    if(unlikely(interrupted)) break;
                 }
                 /*for(int j=start;j<end;j++) { // Step 3
                     auto v = N_of_S[j];
@@ -159,10 +162,6 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
     if(S.size() == k-2) {
         auto neighbors = N_of_S.size() - start;
         uint64_t diff = 0;
-
-        inverted_N.clear();
-        for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
-        for(auto& v : S) inverted_N.insert(v);
 
         if(neighbors == 1) {
             for(auto& neigh : graph->neighs(N_of_S[start])) {
@@ -252,7 +251,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
             inverted_N.erase(N_of_S.back());
             N_of_S.pop_back();
         }
-        if(interrupted) return false;
+        if(unlikely(interrupted)) return false;
         
         //if(left) found = true;
         //else break;
@@ -295,7 +294,7 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
         for(auto& neigh : graph->fwd_neighs(v)) {
             // if(!excluded[neigh]) {
             // if(!graph->is_deleted(neigh)) {
-            if(!IS_DELETED(neigh, v)) { 
+            if(likely(!IS_DELETED(neigh, v))) { 
                 N_of_S.push_back(neigh);
                 // C_of_S.insert(neigh);
                 // in_C[neigh] = true;
