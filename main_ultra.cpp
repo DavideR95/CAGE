@@ -1,36 +1,36 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <random>
 #include <algorithm>
 #include <chrono>
 #include <unistd.h>
 #include <signal.h>
-#include <set>
-#include <unordered_set>
 
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
+// Used for vtune code profiling
 #if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
 #endif
 
+/* Likely / unlikely macros for branch prediction */
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
-//#ifndef TIMEOUT
-#define TIMEOUT (60 * 15) /* Timer 30 minutes */
-//#endif
+/* Timer 30 minutes */
+#define TIMEOUT (60 * 15) 
 
-#define START_REC (enumeration_ultra(S, graph, k, N_of_S, 0))
+/* Check if neighbor is currently deleted from the graph */
+#define IS_DELETED(neighbor, node) (neighbor < node) 
 
-#define IS_DELETED(neighbor, node) (neighbor < node)
-
+/* (Linear) Search for elem in std::vector arr */
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end()) 
 
-#define IS_IN_N_OR_S(elem) (inverted_N.count(elem) ||  (std::find(S.begin(), S.end(), elem) != S.end()) )
+/* Look for elem into N via inverted_N hash table or into S with linear search */
+#define IS_IN_N_OR_S(elem) (inverted_N.count(elem) || (std::find(S.begin(), S.end(), elem) != S.end()) )
 
+/* Auxiliary function used to read input graphs */
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
     const std::string& input_file, bool nde = true, bool directed = false) {
@@ -39,280 +39,177 @@ std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
     return (nde) ? ReadNde<node_t, fast_graph_t>(in, directed) : ReadOlympiadsFormat<node_t, fast_graph_t>(in, directed);
 }
 
+// Solutions counter
 uint64_t solutions = 0;
-// std::vector<bool> excluded;
-// std::vector<bool> in_S;
-// std::vector<bool> in_C;
-// std::vector<bool> tmp;
-// std::vector<size_t> current_degree;
 
-bool interrupted = false; // Timer
+// Timeout handler
+bool interrupted = false; 
 
-using node_t = uint32_t;
+// We assume to work with less than 2^32-1 vertices
+using node_t = uint32_t; // This can be changed to uint64_t if needed
 
-uint64_t recursion_nodes = 0;
-uint64_t leaves = 0;
-uint64_t fruitful_leaves = 0;
-uint64_t min_sol_per_leaf = 10000000L;
-uint64_t max_sol_per_leaf = 0L;
-uint64_t count_min_leaf = 0L;
-uint64_t count_max_leaf = 0L;
+/* Statistical counters */
+uint64_t recursion_nodes = 0; // Total number of nodes in the recursion tree generated
+uint64_t leaves = 0; // Total number of leaves in the recursion tree
+uint64_t fruitful_leaves = 0; // Total number of leaves that produced at least one solution
+uint64_t min_sol_per_leaf(-1); // Minimum number of solutions found in one fruitful leaf
+uint64_t max_sol_per_leaf = 0L; // Maximum number of solutions found in one fruitful leaf
+uint64_t count_min_leaf = 0L; // How many leaves achieved the minimum
+uint64_t count_max_leaf = 0L; // How many leaves achieved the maximum
 
+// Inverted index (hash table) for N(S): contains all and only nodes currently in N(S)
 cuckoo_hash_set<node_t> inverted_N;
 
-bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& N_of_S, int start) {
-    recursion_nodes++;
+
+/* Main recursive function
+ * assumes k > 2 and S.size() <= k-2 */
+bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, unsigned short k, std::vector<node_t>& N_of_S, int start) {
+    recursion_nodes++; // Every call counts as a recursion node
 
     // INV: S.size() <= k-2
 
-    if(unlikely(interrupted)) return false; // Timer
+    if(unlikely(interrupted)) return false; // Timer expired, stop working
 
-    auto end = N_of_S.size();
-    if(start == end) { leaves++; return false; } // No nuovi nodi
-    bool found = false;
-
-    auto first_node = S.front();
-
-    if(S.size() == k-3) {
-        uint64_t diff = 0;
-        auto neighbors = end - start;
-
-        // Caso 1: 3 nodi a distanza 1
-        diff += (neighbors * (neighbors - 1) * (neighbors - 2)) / 6; // Se ci sono 1 o 2 neighbors fa zero e va bene
-        
-        // Caso 2: un nodo a distanza 1 e due a distanza 2:
-
-        // Caso 3: due nodi a distanza 1 e uno a distanza 2:
-        if(likely(neighbors > 0)) {
-
-            /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
-            std::vector<bool> inverted_N(next_prime+1, false);
-            for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-            /*inverted_N.clear();
-            for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
-            for(auto& v : S) inverted_N.insert(v);*/
-
-
-            uint64_t contatore = 0;
-            for(int i=start;i<end;i++) {
-                if(unlikely(interrupted)) break;
-                auto u = N_of_S[i];
-                uint64_t deg_u = 0;
-
-                auto neighbors_of_u = graph->neighs(u);
-
-                for(auto& neigh : neighbors_of_u) { // Spostare IS_DELETED come prima condizione
-                    if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
-                        deg_u++; // Step 2 -> sono in N^2(S) attraverso u -> 1 + 2 + 0
-
-                        for(auto& v : graph->neighs(neigh)) {
-                            if(!IS_DELETED(v, first_node) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
-                                diff++; // Step 4 -> 1 + 1 + 1 
-                            }
-                        }
-                        // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
-                        for(int j=start;j<end;j++) {
-                            auto v = N_of_S[j];
-                            if(v != u && v != neigh) {
-                                if(likely(!graph->are_neighs(neigh, v)))
-                                    diff++; // 2 + 1 + 0
-                                else 
-                                    contatore++;
-                            }
-                        }
-                        
-                    }
-                    if(unlikely(interrupted)) break;
-                }
-                /*for(int j=start;j<end;j++) { // Step 3
-                    auto v = N_of_S[j];
-                     
-                    if(u != v) {
-                        for(auto& neigh : graph->neighs(v)) {
-                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
-                                contatore++; // 2 + 1 + 0
-                            }
-                        }
-                    }
-
-                    if(interrupted) break;
-                }*/
-                diff += (deg_u * (deg_u - 1)) / 2;
-                //contatore += deg_u;
-            }
-            diff += contatore / 2;
-            
-        }
-
-        
-
-        // Caso 4: uno + uno + uno
-
-        solutions += diff;
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
-        else if(diff == min_sol_per_leaf) count_min_leaf++;
-        if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
-        else if(diff == max_sol_per_leaf) count_max_leaf++;
-
-        leaves++;
-        if(diff > 0) fruitful_leaves++;
-        return (diff > 0);
-    }
+    auto end = N_of_S.size(); 
+    if(unlikely(start == end)) { leaves++; return false; } // There are no new nodes to process, return
+    bool found = false; // Has this call found any solution?
 
     if(S.size() == k-2) {
-        auto neighbors = N_of_S.size() - start;
+        auto neighbors = N_of_S.size() - start; // |N(S)|
         uint64_t diff = 0;
 
         if(neighbors == 1) {
+            // If there's just one neighbor we need to always use it and take all its neighbors.
             for(auto& neigh : graph->neighs(N_of_S[start])) {
-                if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
-                    diff++;
+                // Using S.front() helps keeping S (very small) in cache
+                if(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh)) {
+                    diff++; // Every neighbor contributes to a solution (kind: 1+1)
                 }
             }
         }
-        else {
-            // 2 + 0
-            diff = (neighbors) * (neighbors - 1) / 2; // Questi sono quelli che posso fare a distanza 1
+        else { // There is more than one vertex in N(S)
+            // First, compute the number of solutions using pairs of nodes from N(S)
+            diff = (neighbors) * (neighbors - 1) / 2; // (kind: 2+0)
             
-            for(int i=start;i<end;i++) { // 1 + 1
-                auto u = N_of_S[i];
+            // Then, pick one vertex from N(S) and one vertex from N^2(S)
+            for(int i=start;i<end;i++) {
+                auto u = N_of_S[i]; 
                 for(auto& neigh : graph->neighs(u)) {
-                    if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
-                        diff++;
+                    if(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh)) {
+                        diff++; // Every neighbor of u corresponds to a solution (kind: 1+1)
                     }
                 }
                 if(interrupted) break;
             }
         } 
 
-        solutions += diff; 
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
+        solutions += diff; // Update the number of solutions found
+        // Update statistics
+        if(diff > 0 && diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
         else if(diff == min_sol_per_leaf) count_min_leaf++;
         if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
         else if(diff == max_sol_per_leaf) count_max_leaf++;
 
-        leaves++;
-        if(diff > 0) fruitful_leaves++;
+        leaves++; // This is a leaf node in the recursion tree
+        if(diff > 0) fruitful_leaves++; // If this node found any solution, then it is a fruitful leaf
         return (diff > 0);
     } 
 
-    bool im_a_parent = false;
+    bool im_a_parent = false; // Used to check if this is a dead leaf
 
-    // cuckoo_hash_set<node_t> inverted_N;
-    // inverted_N.reserve(N_of_S.size()*2);
-    // inverted_N.clear();
-    // for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]);
-    // for(auto& v : S) inverted_N.insert(v);
+    // Recursive part: take each node from N(S), one at a time and add it to S
+    for(;start < end; start++) { 
+        if(unlikely(interrupted)) return false;
 
-    for(;start < end; start++) {
-        if(interrupted) return false;
-
-        auto old_size = N_of_S.size();
+        auto old_size = N_of_S.size(); // Used to
         auto v = N_of_S[start];
         
-        if(IS_DELETED(v, first_node) || IN_ARRAY(v, S)) continue;
-        size_t tmp = 0;
+        // If this neighbor is deleted or it's already part of the solution, skip it
+        if(unlikely(IS_DELETED(v, S.front()) || IN_ARRAY(v, S))) continue;
+        size_t increase = 0; // How many new vertices will v bring to N(S)?
         for(auto& neigh : graph->neighs(v)) {
-            if(!IS_DELETED(neigh, first_node) && !IS_IN_N_OR_S(neigh)) {
+            if(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh)) {
+                // Pick only vertices not already deleted, not already in N(S) and not already in S
                 N_of_S.push_back(neigh);
                 inverted_N.insert(neigh);
-                tmp++;
+                increase++;
             }
         }
 
-        bool left;
-
-        if(start+1 < end+tmp) {
-            // Chiamata sx
+        bool left; 
+        // If there are still nodes to process in the next recursive calls
+        if(start+1 < end+increase) {
+            // Add v to S
             S.push_back(v); 
-            // in_S[v] = true;
-            // graph->put_in_S(v);
-            //inverted_N.insert(v);
-            left = enumeration_ultra(S, graph, k, N_of_S, start+1);
+            // Recur with the new S (this is called the "left" call)
+            left = enumeration_ultra(S, graph, k, N_of_S, start+1); // Advance with the start pointer (process N(S) in order)
             
-            im_a_parent = true;
-            // std::cout << "Finita la rec call di " << S->back() << std::endl;
-            S.pop_back();
-            //inverted_N.erase(v);
-            // in_S[v] = false;
-            // graph->remove_from_S(v);
-            // excluded[v] = true;
-            // std::cout << "Ora tolgo " << v << ", e left = " << left << std::endl;
+            im_a_parent = true; // We have generated a child node in the recursion tree, so we are not a leaf
+            
+            S.pop_back(); // Remove v from S
         }
         else {
+            // No room to make new calls, the (fake) "left" call failed
             left = false;
         }
 
-        
-
+        // Remove the nodes previously added to N(S) by using v
         while(N_of_S.size() > old_size) {
-            // in_C[N_of_S.back()] = false;
-            // graph->remove_from_N(N_of_S.back());
             inverted_N.erase(N_of_S.back());
             N_of_S.pop_back();
         }
-        if(unlikely(interrupted)) return false;
-        
-        //if(left) found = true;
-        //else break;
+        if(unlikely(interrupted)) return false; // Check the timer
 
-        if(left && !interrupted) {
-            /*excluded[v] = true;
-            enhanced(S, graph, k, C_of_S, start+1);
-            excluded[v] = false;*/
-            found = true;
-        }
-        else {
-            break;
-        }
+        if(left)
+            found = true; // This call found at least one solution
+        else
+            break; // If this call did not find solutions, no subsequent calls with this S can
     }
 
-    if(!found && !im_a_parent) { leaves++; }
+    if(!found && !im_a_parent) { leaves++; } 
 
     return found;
 }
 
+/* Main loop used to start the recursive algorithm.
+ * Processes each node one at a time */
+void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_degree) {
+    std::vector<node_t> N_of_S; // N(S) is a vector of nodes
+    N_of_S.reserve(1.5*max_degree); // Make room for enough neighbors
 
+    std::vector<node_t> S;
+    S.reserve(k);
+    auto size = graph->size();
+    std::cout << "---------------------------------" << std::endl;
 
+    // Traverse all vertices in index order
+    for(auto v=0;v<size-k+1;v++) {
+        if(unlikely(interrupted)) return; // Check the timer 
 
-void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k) {
-    // std::set<node_t, vertexCmp> C_of_S;
-    std::vector<node_t> N_of_S;
-    N_of_S.reserve(graph->size()/10);
-    for(auto v=0;v<graph->size()-k+1;v++) {
-    
-    /*for(auto v=103;v<104;v++) {
-        for(auto i=0;i<v;i++) excluded[i] = true;*/
-        if(interrupted) return; // Timer 
-        S.push_back(v);
-        //inverted_N.insert((node_t&)v);
-        // in_S[v] = true;
-        // graph->put_in_S(v);
-        // Prima lista C(S)
-        // Popolo C(S) con i vicini non esclusi di v
+        std::cout << "Processing node " << v << "/" << size << "...\r"; 
 
-        for(auto& neigh : graph->fwd_neighs(v)) {
-            // if(!excluded[neigh]) {
-            // if(!graph->is_deleted(neigh)) {
-            if(likely(!IS_DELETED(neigh, v))) { 
+        S.push_back(v); // S = {v}
+
+        // Add only the forward neighbors of v to N(S)
+        // This way we will find all the graphlets that contain v as the "smallest" vertex
+        for(auto& neigh : graph->fwd_neighs(v)) { 
+            // If neigh is deleted, don't add it to N(S)
+            if(!IS_DELETED(neigh, v)) { 
                 N_of_S.push_back(neigh);
-                // C_of_S.insert(neigh);
-                // in_C[neigh] = true;
-                // graph->put_in_N(neigh);
                 inverted_N.insert(neigh);
             }
         }
 
-
-        START_REC;
+        // Start the recursion from v
+        enumeration_ultra(S, graph, k, N_of_S, 0);
         
+        // Remove v from S
         S.pop_back();
 
-        // graph->remove_from_S(v);
+        // There is no need to explicitly delete v because the nodes are processed in order
+        // Thus only vertices < v will be considered deleted
 
-        // no need to explicitly delete v
-        
-        // for(auto& v : N_of_S) graph->remove_from_N(v); 
+        // Clear the additional data structures for the next vertex
         N_of_S.clear();
         inverted_N.clear();
 
@@ -320,18 +217,19 @@ void main_enum(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
+    // Used for vtune code profiling
 #if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
     __itt_pause();
 #endif
-    bool is_nde = true;
-    int k;
+    bool is_nde = true; // Input format
+    unsigned short k;
 
     switch(argc) {
         case 3:
-            k = std::stoi(argv[2]);
+            k = static_cast<unsigned short>(std::stoi(argv[2]));
             break;
         case 4:
-            k = std::stoi(argv[2]);
+            k = static_cast<unsigned short>(std::stoi(argv[2]));
             is_nde = false;
             break;
         default: 
@@ -339,10 +237,8 @@ int main(int argc, char* argv[]) {
             return 1;
     }
     
-
+    // Read the input graph from file
     auto graph = ReadFastGraph<node_t, void>(argv[1], is_nde);
-
-    std::vector<node_t> S;
 
     std::cout << "Nodes: " << graph->size() << std::endl;
     size_t edges = 0;
@@ -360,25 +256,40 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Edges: " << edges << std::endl;
 
+    if(unlikely(k <= 2)) {
+        std::cout << "Found " << ((k <= 1) ? graph->size() : edges) << " graphlets of size " << k << std::endl;
+        std::cout << "No computations done, exiting." << std::endl;
+        return 0;
+    }
+
+    // Find a degeneracy ordering of the graph
     graph->Permute(DegeneracyOrder(*graph));
 
+    // Set the timeout
     signal(SIGALRM, [](int) { interrupted = true; });
     signal(SIGINT, [](int) { interrupted = true; });
-    alarm(TIMEOUT); // Set timer 
-
-    std::cerr << "Graph read, max degree: " << max_degree << " degeneracy: " << deg << std::endl;
+    alarm(TIMEOUT);
+    // Output stats on the graph (used to understand when the graph is ready)
+    std::cerr << "Graph read. ";
+    std::cout << "Max degree: " << max_degree << " degeneracy: " << deg << std::endl;
+    std::cerr << "Starting the computation... use CTRL-C to manually stop or wait for the timeout (";
+    std::cerr << TIMEOUT << "s)." << std::endl;
 #if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
-    __itt_resume();
+    __itt_resume(); // For vtune profiling
 #endif
+
+    // Start working
     auto start = std::chrono::high_resolution_clock::now();
 
-    main_enum(S, graph.get(), k);
+    main_loop(graph.get(), k, max_degree); // Start the enumeration
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
+
 #if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)   
-__itt_pause();
+    __itt_pause(); // For vtune profiling
 #endif
 
+    // Output results
     std::cout << "Found " << solutions << " graphlets of size " << k;
     std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
     std::cout << "Recursion nodes - rec. leaves: " << recursion_nodes << " - " << leaves << " = " << recursion_nodes-leaves << std::endl;
