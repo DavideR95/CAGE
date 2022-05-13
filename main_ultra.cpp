@@ -186,7 +186,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
     for(auto v=0;v<size-k+1;v++) {
         if(unlikely(interrupted)) return; // Check the timer 
 
-        std::cout << "\rProcessing node " << v << "/" << size << "..."; 
+        std::cerr << "\rProcessing node " << v << "/" << size << "..."; 
 
         S.push_back(v); // S = {v}
 
@@ -215,7 +215,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
 
     }
 
-    std::cout << "Done. " << std::endl << "---------------------------------" << std::endl;
+    std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
