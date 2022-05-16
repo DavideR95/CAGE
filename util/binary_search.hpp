@@ -198,22 +198,22 @@ class linear_search_t {
   }
 
   bool count(T v) const {
-    size_t n = max_index + 1;
+    /*size_t n = max_index + 1;
     int i = 0;
     while(i < n) {
       if(support[i] == v) return true;
       i++;
     }
-    return false;
+    return false;*/
     // Vecchia binary search
-    /*size_t cur = 0;
+    size_t cur = 0;
     while (n > 1) {
-      const int64_t half = n / 2;
+      const uint64_t half = n / 2;
       cur = support[cur + half] < v ? cur + half : half;
       n -= half;
     }
     cur += support[cur] < v;
-    return cur < support.size() && support[cur] == v;*/
+    return cur < support.size() && support[cur] == v;
   }
 
   iterator lower_bound(T v) const {

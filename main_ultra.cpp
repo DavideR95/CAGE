@@ -42,6 +42,7 @@ std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
 // Solutions counter
 uint64_t solutions = 0;
 
+
 // Timeout handler
 bool interrupted = false; 
 
@@ -56,6 +57,7 @@ uint64_t min_sol_per_leaf(-1); // Minimum number of solutions found in one fruit
 uint64_t max_sol_per_leaf = 0L; // Maximum number of solutions found in one fruitful leaf
 uint64_t count_min_leaf = 0L; // How many leaves achieved the minimum
 uint64_t count_max_leaf = 0L; // How many leaves achieved the maximum
+size_t avg_n_of_s_size = 0; // Average size of N(S) throughout the recursion
 
 // Inverted index (hash table) for N(S): contains all and only nodes currently in N(S)
 cuckoo_hash_set<node_t> inverted_N;
@@ -72,95 +74,81 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
     if(unlikely(interrupted)) return false; // Timer expired, stop working
 
     auto end = N_of_S.size(); 
+    avg_n_of_s_size += end; // Used for statistical purposes 
     if(unlikely(start == end)) { leaves++; return false; } // There are no new nodes to process, return
     bool found = false; // Has this call found any solution?
 
     if(S.size() == k-3) {
         uint64_t diff = 0;
-        auto neighbors = end - start;
+        auto neighbors = end - start; // |N(S)|
 
-        // Caso 1: 3 nodi a distanza 1
-        diff += (neighbors * (neighbors - 1) * (neighbors - 2)) / 6; // Se ci sono 1 o 2 neighbors fa zero e va bene
+        // First case: pick any combination of 3 vertices from N(S)
+        // This is the binomial coefficient (|N(S)| over 3)
+        diff += (neighbors * (neighbors - 1) * (neighbors - 2)) / 6; 
         
         // Caso 2: un nodo a distanza 1 e due a distanza 2:
 
-        // Caso 3: due nodi a distanza 1 e uno a distanza 2:
-        if(likely(neighbors > 0)) {
+        // Remaning three cases to pick three nodes connected to S:
+        // Case 2 (denoted with 1 + 2 + 0): pick one node in N(S) and then two of its neighbors in N^2(S)
+        // Case 3 (denoted with 2 + 1 + 0): pick two nodes in N(S) and then one of their neighbors in N^2(S)
+        // Case 4: (denoted with 1 + 1 + 1): pick one node in N(S), a neighbor in N^2(S) and a neighbor in N^3(S)
 
-            /*node_t next_prime = find_prime_after(N_of_S.size() * 2.5);
-            std::vector<bool> inverted_N(next_prime+1, false);
-            for(int i=start;i<end;i++) inverted_N[N_of_S[i] % next_prime] = true;*/
-            /*inverted_N.clear();
-            for(int i=0;i<end;i++) inverted_N.insert(N_of_S[i]); // Inserire anche i nodi in S
-            for(auto& v : S) inverted_N.insert(v);*/
-
-
-            uint64_t contatore = 0;
-            for(int i=start;i<end;i++) {
+        if(likely(neighbors > 0)) { 
+            uint64_t counter_dist_1 = 0; // Used for case 3
+            for(int i=start;i<end;i++) { 
                 if(unlikely(interrupted)) break;
-                auto u = N_of_S[i];
-                uint64_t deg_u = 0;
+                auto u = N_of_S[i]; // First, pick a node from N(S), this is needed for all the three cases
+                uint64_t deg_u = 0; // Used for 1 + 2 + 0
 
-                auto neighbors_of_u = graph->neighs(u);
-
-                for(auto& neigh : neighbors_of_u) { // Spostare IS_DELETED come prima condizione
+                for(auto& neigh : graph->neighs(u)) { // Scan the neighbors of u
                     if(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh)) {
-                        deg_u++; // Step 2 -> sono in N^2(S) attraverso u -> 1 + 2 + 0
+                        // Here we are in N^2(S) from the viewpoint of u
+                        deg_u++; // Count neighbors of u in N^2(S) [1+2+0]
+
+                        // For case 3, we need to pick another v in N(S)
+                        for(int j=start;j<end;j++) {
+                            auto v = N_of_S[j]; // Scan N(S) again
+                            if(likely(v != u && v != neigh)) { // Avoid u from N(S) and the current neighbor of u
+                                // [2+1+0]
+                                if(likely(!graph->are_neighs(neigh, v)))
+                                    diff++; 
+                                else 
+                                    counter_dist_1++; // These nodes will be counted two times, one from v and one from u
+                            }
+                        }
 
                         for(auto& v : graph->neighs(neigh)) {
                             if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
-                                diff++; // Step 4 -> 1 + 1 + 1 
-                            }
-                        }
-                        // Qui v è il neigh di u, devo controllare se è vicino di qualcuno in N(S)
-                        for(int j=start;j<end;j++) {
-                            auto v = N_of_S[j];
-                            if(v != u && v != neigh) {
-                                if(likely(!graph->are_neighs(neigh, v)))
-                                    diff++; // 2 + 1 + 0
-                                else 
-                                    contatore++;
+                                // Here we are in N^3(S) from the viewpoint of v, neighbor of u
+                                diff++; // [1+1+1]
                             }
                         }
                         
                     }
                     if(unlikely(interrupted)) break;
                 }
-                /*for(int j=start;j<end;j++) { // Step 3
-                    auto v = N_of_S[j];
-                     
-                    if(u != v) {
-                        for(auto& neigh : graph->neighs(v)) {
-                            if(!IS_DELETED(neigh, first_node) && neigh != u && !IS_IN_N_OR_S(neigh)) {
-                                contatore++; // 2 + 1 + 0
-                            }
-                        }
-                    }
-
-                    if(interrupted) break;
-                }*/
+                // Add the possible combinations of the neighbors of u in N^2(S)
                 diff += (deg_u * (deg_u - 1)) / 2;
-                //contatore += deg_u;
             }
-            diff += contatore / 2;
-            
+            // Avoid the duplicates generated from line 113
+            diff += counter_dist_1 / 2;
         }
 
-        
-
-        // Caso 4: uno + uno + uno
-
+        // Add all the solutions found
         solutions += diff;
-        if(diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
+        // Update statistics
+        if(diff > 0 && diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
         else if(diff == min_sol_per_leaf) count_min_leaf++;
         if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
         else if(diff == max_sol_per_leaf) count_max_leaf++;
+
+
 
         leaves++;
         if(diff > 0) fruitful_leaves++;
         return (diff > 0);
     }
-    else if(S.size() == k-2) {
+    else if(unlikely(S.size() == k-2)) { // This is just a fallback for k = 3
         auto neighbors = N_of_S.size() - start; // |N(S)|
         uint64_t diff = 0;
 
@@ -272,7 +260,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
     for(auto v=0;v<size-k+1;v++) {
         if(unlikely(interrupted)) return; // Check the timer 
 
-        std::cerr << "\rProcessing node " << v << "/" << size << "..."; 
+        std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
         S.push_back(v); // S = {v}
 
@@ -359,7 +347,7 @@ int main(int argc, char* argv[]) {
     alarm(TIMEOUT);
     // Output stats on the graph (used to understand when the graph is ready)
     std::cerr << "Graph read. ";
-    std::cout << "Max degree: " << max_degree << " degeneracy: " << deg << std::endl;
+    std::cout << "Max degree: " << max_degree << " avg. degree: " << edges/graph->size() << " degeneracy: " << deg << std::endl;
     std::cerr << "Starting the computation... use CTRL-C to manually stop or wait for the timeout (";
     std::cerr << TIMEOUT << "s)." << std::endl;
 #if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
@@ -388,6 +376,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Average sol. per leaf: " << (double) solutions / fruitful_leaves << std::endl;
     std::cout << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
     std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
+    std::cout << "Avg |N(S)|: " << avg_n_of_s_size / recursion_nodes << std::endl;
 
     return (interrupted ? 14 : 0);
 }
