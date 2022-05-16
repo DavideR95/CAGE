@@ -206,9 +206,10 @@ class linear_search_t {
     }
     return false;*/
     // Vecchia binary search
+    size_t n = support.size();
     size_t cur = 0;
     while (n > 1) {
-      const uint64_t half = n / 2;
+      const int64_t half = n / 2;
       cur = support[cur + half] < v ? cur + half : half;
       n -= half;
     }
