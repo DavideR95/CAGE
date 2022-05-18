@@ -56,6 +56,7 @@ uint64_t min_sol_per_leaf(-1); // Minimum number of solutions found in one fruit
 uint64_t max_sol_per_leaf = 0L; // Maximum number of solutions found in one fruitful leaf
 uint64_t count_min_leaf = 0L; // How many leaves achieved the minimum
 uint64_t count_max_leaf = 0L; // How many leaves achieved the maximum
+size_t avg_n_of_s_size = 0; // Average size of N(S) throughout the recursion
 
 // Inverted index (hash table) for N(S): contains all and only nodes currently in N(S)
 cuckoo_hash_set<node_t> inverted_N;
@@ -72,6 +73,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
     auto end = N_of_S.size(); 
     if(unlikely(start == end)) { leaves++; return false; } // There are no new nodes to process, return
+    avg_n_of_s_size += end; // Used for statistical purposes 
     bool found = false; // Has this call found any solution?
 
     if(S.size() == k-2) {
@@ -186,7 +188,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
     for(auto v=0;v<size-k+1;v++) {
         if(unlikely(interrupted)) return; // Check the timer 
 
-        std::cerr << "\rProcessing node " << v << "/" << size << "..."; 
+        std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
         S.push_back(v); // S = {v}
 
@@ -302,6 +304,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Average sol. per leaf: " << (double) solutions / fruitful_leaves << std::endl;
     std::cout << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
     std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
+    std::cout << "Avg |N(S)|: " << avg_n_of_s_size / recursion_nodes << std::endl;
 
     return (interrupted ? 14 : 0);
 }
