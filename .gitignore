@@ -46,3 +46,7 @@
 **/test_data
 
 **/simde
+
+*.nde
+
+**/bin
