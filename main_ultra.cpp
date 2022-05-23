@@ -36,7 +36,9 @@ std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
     const std::string& input_file, bool nde = true, bool directed = false) {
     FILE* in = fopen(input_file.c_str(), "re");
     if (!in) throw std::runtime_error("Could not open " + input_file);
-    return (nde) ? ReadNde<node_t, fast_graph_t>(in, directed) : ReadOlympiadsFormat<node_t, fast_graph_t>(in, directed);
+    auto graph = (nde) ? ReadNde<node_t, fast_graph_t>(in, directed) : ReadOlympiadsFormat<node_t, fast_graph_t>(in, directed);
+    fclose(in);
+    return graph;
 }
 
 // Solutions counter
@@ -186,7 +188,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
 
     // Traverse all vertices in index order
     for(auto v=0;v<size-k+1;v++) {
-        if(unlikely(interrupted)) return; // Check the timer 
+        if(unlikely(interrupted)) break; // Check the timer 
 
         std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
