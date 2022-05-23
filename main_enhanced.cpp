@@ -1,6 +1,6 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
-#include <random>
 #include <algorithm>
 #include <chrono>
 #include <unistd.h>
@@ -9,222 +9,268 @@
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
-#ifdef __INTEL_COMPILER
+// Used for vtune code profiling
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
 #endif
 
-#ifndef TIMEOUT
-#define TIMEOUT (60 * 15) /* Timer 30 minutes */
-#endif
+/* Likely / unlikely macros for branch prediction */
+#define likely(x)       __builtin_expect(!!(x), 1)
+#define unlikely(x)     __builtin_expect(!!(x), 0)
 
-//#define START_REC (ciproviamo(S, graph, k, C_of_S, 0, 0))
-#define START_REC (enhanced(S, graph, k, C_of_S, 0))
+/* Timer 30 minutes */
+#define TIMEOUT (60 * 15) 
 
+/* Check if neighbor is currently deleted from the graph */
+#define IS_DELETED(neighbor, node) (neighbor < node) 
+
+/* (Linear) Search for elem in std::vector arr */
+#define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end()) 
+
+/* Look for elem into N via inverted_N hash table or into S with linear search */
+#define IS_IN_N_OR_S(elem) (inverted_N.count(elem) || (std::find(S.begin(), S.end(), elem) != S.end()) )
+
+/* Auxiliary function used to read input graphs */
 template <typename node_t, typename label_t>
 std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
-    const std::string& input_file, bool directed = false) {
+    const std::string& input_file, bool nde = true, bool directed = false) {
     FILE* in = fopen(input_file.c_str(), "re");
     if (!in) throw std::runtime_error("Could not open " + input_file);
-    return ReadNde<node_t, fast_graph_t>(in, directed);
+    auto graph = (nde) ? ReadNde<node_t, fast_graph_t>(in, directed) : ReadOlympiadsFormat<node_t, fast_graph_t>(in, directed);
+    fclose(in);
+    return graph;
 }
 
-uint64_t counter = 0;
-std::vector<bool> excluded;
-std::vector<bool> in_S;
-std::vector<bool> in_C;
-//std::vector<bool> tmp;
-
-bool interrupted = false; // Timer
-
-using node_t = uint32_t;
-
-uint64_t ricorsioni = 0;
-uint64_t leaves = 0;
+// Solutions counter
+uint64_t solutions = 0;
 
 
-/* Questa versione va più che bene per O(|E|) delay
- * La versione "ci proviamo" era per provare ad arrivare a O(k) delay
- */
-bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, std::vector<node_t>& C_of_S, int start) {
-    ricorsioni++;
-    if(S->size() == k) {
-        counter++;
+// Timeout handler
+bool interrupted = false; 
+
+// We assume to work with less than 2^32-1 vertices
+using node_t = uint32_t; // This can be changed to uint64_t if needed
+
+/* Statistical counters */
+uint64_t recursion_nodes = 0; // Total number of nodes in the recursion tree generated
+uint64_t leaves = 0; // Total number of leaves in the recursion tree
+uint64_t fruitful_leaves = 0; // Total number of leaves that produced at least one solution
+uint64_t min_sol_per_leaf(-1); // Minimum number of solutions found in one fruitful leaf
+uint64_t max_sol_per_leaf = 0L; // Maximum number of solutions found in one fruitful leaf
+uint64_t count_min_leaf = 0L; // How many leaves achieved the minimum
+uint64_t count_max_leaf = 0L; // How many leaves achieved the maximum
+size_t avg_n_of_s_size = 0; // Average size of N(S) throughout the recursion
+
+// Inverted index (hash table) for N(S): contains all and only nodes currently in N(S)
+cuckoo_hash_set<node_t> inverted_N;
+
+
+/* Main recursive function */
+bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, unsigned short k, std::vector<node_t>& N_of_S, int start) {
+    recursion_nodes++; // Every call counts as a recursion node
+
+    if(S.size() == k) {
+        solutions++;
         leaves++;
-        //std::cout << "Trovato graphlet: "; 
-        //for(auto& v : *S) std::cout << v << " ";
-        //std::cout << std::endl;
+        fruitful_leaves++;
         return true;
     }
 
-    if(interrupted) return false; // Timer
+    if(unlikely(interrupted)) return false; // Timer expired, stop working
 
-    if(start == C_of_S.size()) { leaves++; return false; } // No nuovi nodi
-    auto end = C_of_S.size();
-    bool found = false;
+    auto end = N_of_S.size(); 
+    avg_n_of_s_size += end; // Used for statistical purposes 
+    if(unlikely(start == end)) { leaves++; return false; } // There are no new nodes to process, return
+    bool found = false; // Has this call found any solution?
 
-    // PROVARE A:
-    // Generare k-i figli dove i è la profondità della ricorsione.
-    // Come evitare che vengano generati i duplicati del graphlet fatto da k-i?
+    bool im_a_parent = false; // Used to check if this is a dead leaf
 
+    // Recursive part: take each node from N(S), one at a time and add it to S
+    for(;start < end; start++) { 
+        if(unlikely(interrupted)) return false;
 
-    for(;start < end; start++) {
-        if(interrupted) return false;
-
-        auto old_size = C_of_S.size();
-        auto v = C_of_S[start];
-        if(excluded[v] || in_S[v]) continue;
+        auto old_size = N_of_S.size(); // Used to
+        auto v = N_of_S[start];
+        
+        // If this neighbor is deleted or it's already part of the solution, skip it
+        if(unlikely(IS_DELETED(v, S.front()) || IN_ARRAY(v, S))) continue;
+        size_t increase = 0; // How many new vertices will v bring to N(S)?
         for(auto& neigh : graph->neighs(v)) {
-            if(!in_C[neigh] && !excluded[neigh] && !in_S[neigh]) {
-                C_of_S.push_back(neigh);
-                in_C[neigh] = true;
+            if(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh)) {
+                // Pick only vertices not already deleted, not already in N(S) and not already in S
+                N_of_S.push_back(neigh);
+                inverted_N.insert(neigh);
+                increase++;
             }
         }
-        // Chiamata sx
-        S->push_back(v);
-        in_S[v] = true;
-        bool left = enhanced(S, graph, k, C_of_S, start+1);
 
-        S->pop_back();
-        in_S[v] = false;
-
-        while(C_of_S.size() > old_size) {
-            in_C[C_of_S.back()] = false;
-            C_of_S.pop_back();
+        bool left; 
+        // If there are still nodes to process in the next recursive calls
+        if(start+1 <= end+increase) {
+            // Add v to S
+            S.push_back(v); 
+            // Recur with the new S (this is called the "left" call)
+            left = enumeration_ultra(S, graph, k, N_of_S, start+1); // Advance with the start pointer (process N(S) in order)
+            
+            im_a_parent = true; // We have generated a child node in the recursion tree, so we are not a leaf
+            
+            S.pop_back(); // Remove v from S
         }
-        if(interrupted) return false;
-        
-        if(left) found = true;
-        else break;
+        else {
+            // No room to make new calls, the (fake) "left" call failed
+            left = false;
+        }
 
-        //if(left && !interrupted) {
-        //    excluded[v] = true;
-        //    enhanced(S, graph, k, C_of_S, old_size);
-        //    excluded[v] = false;
-        //    found = true;
-        //}
-        //else {
-        //    break;
-        //}
+        // Remove the nodes previously added to N(S) by using v
+        while(N_of_S.size() > old_size) {
+            inverted_N.erase(N_of_S.back());
+            N_of_S.pop_back();
+        }
+        if(unlikely(interrupted)) return false; // Check the timer
+
+        if(left)
+            found = true; // This call found at least one solution
+        else
+            break; // If this call did not find solutions, no subsequent calls with this S can
     }
 
-    if(!found && start >= end) leaves++;
+    if(!found && !im_a_parent) { leaves++; } 
 
     return found;
 }
 
+/* Main loop used to start the recursive algorithm.
+ * Processes each node one at a time */
+void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_degree) {
+    std::vector<node_t> N_of_S; // N(S) is a vector of nodes
+    N_of_S.reserve(1.5*max_degree); // Make room for enough neighbors
 
+    std::vector<node_t> S;
+    S.reserve(k);
+    auto size = graph->size();
+    std::cout << "---------------------------------" << std::endl;
 
+    // Traverse all vertices in index order
+    for(auto v=0;v<size-k+1;v++) {
+        if(unlikely(interrupted)) break; // Check the timer 
 
-void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k) {
-    std::vector<node_t> C_of_S;
-    C_of_S.reserve(graph->size()/2);
-    for(auto v=0;v<graph->size()-k+1;v++) {
-    /*for(auto v=103;v<104;v++) {
-        for(auto i=0;i<v;i++) excluded[i] = true;*/
-        if(interrupted) return; // Timer 
-        S->push_back(v);
-        in_S[v] = true;
-        // Prima lista C(S)
-        // Popolo C(S) con i vicini non esclusi di v
+        std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
-        for(auto& neigh : graph->fwd_neighs(v)) {
-            if(!excluded[neigh]) {
-                C_of_S.push_back(neigh);
-                in_C[neigh] = true;
+        S.push_back(v); // S = {v}
+
+        // Add only the forward neighbors of v to N(S)
+        // This way we will find all the graphlets that contain v as the "smallest" vertex
+        for(auto& neigh : graph->fwd_neighs(v)) { 
+            // If neigh is deleted, don't add it to N(S)
+            if(!IS_DELETED(neigh, v)) { 
+                N_of_S.push_back(neigh);
+                inverted_N.insert(neigh);
             }
         }
-        //std::cout << "V è " << v << " e quindi i vicini sono: ";
-        //for(auto& n : C_of_S) std::cout << n << " ";
-        //std::cout << std::endl;
 
-        //enhanced(S, graph, k, C_of_S, 0);
-
-        START_REC;
+        // Start the recursion from v
+        enumeration_ultra(S, graph, k, N_of_S, 0);
         
-        S->pop_back();
-        in_S[v] = false;
-        excluded[v] = true;
-        
-        for(auto& v : C_of_S) in_C[v] = false;
-        C_of_S.clear();
+        // Remove v from S
+        S.pop_back();
 
-        //return;
+        // There is no need to explicitly delete v because the nodes are processed in order
+        // Thus only vertices < v will be considered deleted
+
+        // Clear the additional data structures for the next vertex
+        N_of_S.clear();
+        inverted_N.clear();
+
     }
+
+    std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
-#ifdef __INTEL_COMPILER
+    // Used for vtune code profiling
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
     __itt_pause();
 #endif
-    bool skip = false;
-    int k;
+    bool is_nde = true; // Input format
+    unsigned short k;
 
     switch(argc) {
         case 3:
-            k = std::stoi(argv[2]);
+            k = static_cast<unsigned short>(std::stoi(argv[2]));
             break;
         case 4:
-            k = std::stoi(argv[2]);
-            skip = true;
+            k = static_cast<unsigned short>(std::stoi(argv[2]));
+            is_nde = false;
             break;
         default: 
-            std::cerr << "Usage: " << argv[0] << " <graph_file.nde> <k> [Skip Printing Info]" << std::endl;
+            std::cerr << "Usage: " << argv[0] << " <graph_file.nde> <k> [Skip Printing Graph Info]" << std::endl;
             return 1;
     }
     
+    // Read the input graph from file
+    auto graph = ReadFastGraph<node_t, void>(argv[1], is_nde);
 
-    //std::cout << "Seme: " << seed << std::endl;
-
-    auto graph = ReadFastGraph<node_t, void>(argv[1]);
-
-    /*indexes.resize(graph->size());
-
-    std::iota(indexes.begin(), indexes.end(), 0);
-
-    std::shuffle(indexes.begin(), indexes.end(), mt);*/
-
-    std::vector<node_t> S;
-
-    excluded.resize(graph->size());
-    in_S.resize(graph->size());
-    in_C.resize(graph->size());
-    //tmp.resize(graph->size(), false);
-
-    
-    if(!skip) std::cout << "Nodes: " << graph->size() << std::endl;
-    
+    std::cout << "Nodes: " << graph->size() << std::endl;
     size_t edges = 0;
-    for(size_t i = 0;i < graph->size(); i++)
+    size_t max_degree = 0;
+    size_t deg = 0;
+    for(size_t i = 0;i < graph->size(); i++) {
         edges += graph->degree(i);
+        if(graph->degree(i) > max_degree) max_degree = graph->degree(i);
+        if(graph->fwd_degree(i) > deg) deg = graph->fwd_degree(i);
+        // current_degree[i] = graph->degree(i);
+    }
 
-    if(!skip) std::cout << "Edges: " << edges << std::endl;
-    
+    edges /= 2; // Undirected graph
+    inverted_N.reserve(2*max_degree);
 
+    std::cout << "Edges: " << edges << std::endl;
+
+    if(unlikely(k <= 2)) {
+        std::cout << "Found " << ((k <= 1) ? graph->size() : edges) << " graphlets of size " << k << std::endl;
+        std::cout << "No computations done, exiting." << std::endl;
+        return 0;
+    }
+
+    // Find a degeneracy ordering of the graph
     graph->Permute(DegeneracyOrder(*graph));
 
+    // Set the timeout
     signal(SIGALRM, [](int) { interrupted = true; });
     signal(SIGINT, [](int) { interrupted = true; });
-    alarm(TIMEOUT); // Set timer 
-
-    std::cerr << "Graph read." << std::endl;
-#ifdef __INTEL_COMPILER
-    __itt_resume();
+    alarm(TIMEOUT);
+    // Output stats on the graph (used to understand when the graph is ready)
+    std::cerr << "Graph read. ";
+    std::cout << "Max degree: " << max_degree << " avg. degree: " << edges/graph->size() << " degeneracy: " << deg << std::endl;
+    std::cerr << "Starting the computation... use CTRL-C to manually stop or wait for the timeout (";
+    std::cerr << TIMEOUT << "s)." << std::endl;
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+    __itt_resume(); // For vtune profiling
 #endif
+
+    // Start working
     auto start = std::chrono::high_resolution_clock::now();
 
-    main_enum(&S, graph.get(), k);
+    main_loop(graph.get(), k, max_degree); // Start the enumeration
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
-#ifdef __INTEL_COMPILER
-    __itt_pause();
+
+#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)   
+    __itt_pause(); // For vtune profiling
 #endif
 
-    std::cout << "Found " << counter << " graphlets of size " << k;
+    // Output results
+    std::cout << "Found " << solutions << " graphlets of size " << k;
     std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
-    std::cout << "Recursion nodes - rec. roots: " << ricorsioni << " - " << graph->size() << " = " << ricorsioni-graph->size() << std::endl;
+    std::cout << "Recursion nodes - rec. leaves: " << recursion_nodes << " - " << leaves << " = " << recursion_nodes-leaves << std::endl;
     //std::cerr << "Solutions per sec: " << counter / std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() * 1000 << std::endl;
-    std::cout << "Leaves: " << leaves << " fruitful leaves: " << counter << " dead leaves: " << leaves-counter << std::endl;
-    std::cout << "Graphlets/leaves ratio: " << (double) counter / leaves << std::endl;
+    std::cout << "Leaves: " << leaves << " fruitful leaves: " << fruitful_leaves << " dead leaves: " << (leaves-fruitful_leaves);
+    std::cout << " ( " << (double) (leaves-fruitful_leaves)/leaves * 100. << " % )" << std::endl;
+    std::cout << "Graphlets/leaves ratio: " << (double) solutions / leaves << std::endl;
+    std::cout << "Average sol. per leaf: " << (double) solutions / fruitful_leaves << std::endl;
+    std::cout << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
+    std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
+    std::cout << "Avg |N(S)|: " << avg_n_of_s_size / recursion_nodes << std::endl;
 
     return (interrupted ? 14 : 0);
 }
