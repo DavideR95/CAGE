@@ -36,7 +36,9 @@ std::unique_ptr<fast_graph_t<node_t, label_t>> ReadFastGraph(
     const std::string& input_file, bool nde = true, bool directed = false) {
     FILE* in = fopen(input_file.c_str(), "re");
     if (!in) throw std::runtime_error("Could not open " + input_file);
-    return (nde) ? ReadNde<node_t, fast_graph_t>(in, directed) : ReadOlympiadsFormat<node_t, fast_graph_t>(in, directed);
+    auto graph = (nde) ? ReadNde<node_t, fast_graph_t>(in, directed) : ReadOlympiadsFormat<node_t, fast_graph_t>(in, directed);
+    fclose(in);
+    return graph;
 }
 
 // Solutions counter
