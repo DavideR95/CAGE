@@ -9,8 +9,12 @@
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
+#ifdef __INTEL_COMPILER
+#include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
+#endif
+
 #ifndef TIMEOUT
-#define TIMEOUT (60 * 30) /* Timer 30 minutes */
+#define TIMEOUT (60 * 15) /* Timer 30 minutes */
 #endif
 
 //#define START_REC (ciproviamo(S, graph, k, C_of_S, 0, 0))
@@ -68,7 +72,6 @@ bool enhanced(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k, 
 
         auto old_size = C_of_S.size();
         auto v = C_of_S[start];
-        if(graph->is_in_S(v)) { }
         if(excluded[v] || in_S[v]) continue;
         for(auto& neigh : graph->neighs(v)) {
             if(!in_C[neigh] && !excluded[neigh] && !in_S[neigh]) {
@@ -150,7 +153,9 @@ void main_enum(std::vector<node_t>* S, fast_graph_t<node_t, void>* graph, int k)
 }
 
 int main(int argc, char* argv[]) {
-
+#ifdef __INTEL_COMPILER
+    __itt_pause();
+#endif
     bool skip = false;
     int k;
 
@@ -201,18 +206,25 @@ int main(int argc, char* argv[]) {
     signal(SIGINT, [](int) { interrupted = true; });
     alarm(TIMEOUT); // Set timer 
 
+    std::cerr << "Graph read." << std::endl;
+#ifdef __INTEL_COMPILER
+    __itt_resume();
+#endif
     auto start = std::chrono::high_resolution_clock::now();
 
     main_enum(&S, graph.get(), k);
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
+#ifdef __INTEL_COMPILER
+    __itt_pause();
+#endif
 
-    std::cerr << "Found " << counter << " graphlets of size " << k;
-    std::cerr << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
-    std::cerr << "Recursion nodes - rec. roots: " << ricorsioni << " - " << graph->size() << " = " << ricorsioni-graph->size() << std::endl;
+    std::cout << "Found " << counter << " graphlets of size " << k;
+    std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
+    std::cout << "Recursion nodes - rec. roots: " << ricorsioni << " - " << graph->size() << " = " << ricorsioni-graph->size() << std::endl;
     //std::cerr << "Solutions per sec: " << counter / std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() * 1000 << std::endl;
-    std::cerr << "Leaves: " << leaves << " fruitful leaves: " << counter << " dead leaves: " << leaves-counter << std::endl;
-    std::cerr << "Graphlets/leaves ratio: " << (double) counter / leaves << std::endl;
+    std::cout << "Leaves: " << leaves << " fruitful leaves: " << counter << " dead leaves: " << leaves-counter << std::endl;
+    std::cout << "Graphlets/leaves ratio: " << (double) counter / leaves << std::endl;
 
     return (interrupted ? 14 : 0);
 }
