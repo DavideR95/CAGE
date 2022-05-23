@@ -118,9 +118,9 @@ extern template class label_array_t<uint64_t, uint64_t>;
 template <typename index_t = uint32_t>
 struct cplx_graph_node {
   index_t index;
-  bool in_S;
+  // bool in_S;
   bool in_N;
-  bool deleted;
+  // bool deleted;
 };
 
 template <typename node_t_ = uint32_t, typename label_t = void>
@@ -135,33 +135,33 @@ class graph_t {
   graph_t() {}  // For deserialization
 
   graph_t(node_t N, const edges_t& edg, const labels_t& lbl)
-      : N_(N), edges_(N), /*nodes_(N), */labels_(lbl) {
+      : N_(N), edges_(N), /*nodes_(N),*/ labels_(lbl) {
     for (node_t i = 0; i < N; i++) {
       edges_[i].init(edg[i]);
-      /*nodes_[i].index = i;
-      nodes_[i].in_S = false;
-      nodes_[i].in_N = false;
-      nodes_[i].deleted = false;*/
+      // nodes_[i].index = i;
+      // nodes_[i].in_S = false;
+      // nodes_[i].in_N = false;
+      // nodes_[i].deleted = false;
     }
   }
 
-  /*bool is_in_S(node_t node) const { return nodes_[node].in_S; }
+  // bool is_in_S(node_t node) const { return nodes_[node].in_S; }
 
-  bool is_in_N(node_t node) const { return nodes_[node].in_N; }
+  // bool is_in_N(node_t node) const { return nodes_[node].in_N; }
 
-  bool is_deleted(node_t node) const { return nodes_[node].deleted; }
+  // bool is_deleted(node_t node) const { return nodes_[node].deleted; }
 
-  void delete_node(node_t node) { nodes_[node].deleted = true; }
+  // void delete_node(node_t node) { nodes_[node].deleted = true; }
 
-  void restore_node(node_t node) { nodes_[node].deleted = false; }
+  // void restore_node(node_t node) { nodes_[node].deleted = false; }
 
-  void put_in_S(node_t node) { nodes_[node].in_S = true; }
+  // void put_in_S(node_t node) { nodes_[node].in_S = true; }
 
-  void remove_from_S(node_t node) { nodes_[node].in_S = false; }
+  // void remove_from_S(node_t node) { nodes_[node].in_S = false; }
 
-  void put_in_N(node_t node) { nodes_[node].in_N = true; }
+  // void put_in_N(node_t node) { nodes_[node].in_N = true; }
 
-  void remove_from_N(node_t node) { nodes_[node].in_N = false; }*/
+  // void remove_from_N(node_t node) { nodes_[node].in_N = false; } 
 
   node_t size() const { return N_; }
   label_t label(node_t i) const { return labels_.at(i); }
@@ -220,7 +220,7 @@ class graph_t {
 
  protected:
   node_t N_;
-  //std::vector<cplx_graph_node<node_t>> nodes_;
+  // std::vector<cplx_graph_node<node_t>> nodes_;
   std::vector<binary_search_t<node_t>> edges_;
   labels_t labels_;
 };
@@ -371,7 +371,7 @@ class fast_graph_t : public graph_t<node_t_, label_t> {
     return absl::Span<const node_t>(beg, end - beg);
   }
 
-  const cuckoo_hash_set<node_t>& neighs(node_t i) const { return edges_[i]; }
+  //const cuckoo_hash_set<node_t>& neighs(node_t i) const { return edges_[i]; }
   bool are_neighs(node_t a, node_t b) const { return edges_[a].count(b); }
   size_t get_rehashes() { 
     size_t total = 0;
@@ -450,15 +450,15 @@ class fast_graph_t : public graph_t<node_t_, label_t> {
   dynarray<cuckoo_hash_set<node_t>> deleted_;
 };
 
-template <typename node_t = uint32_t, typename label_t = void,
+template <typename node_t = uint32_t, 
           template <typename, typename> class Graph = fast_graph_t>
-std::unique_ptr<Graph<node_t, label_t>> ReadOlympiadsFormat(
+std::unique_ptr<Graph<node_t, void>> ReadOlympiadsFormat(
     FILE* in = stdin, bool directed = false, bool one_based = false) {
   node_t N = fastio::FastRead<node_t>(in);
-  fastio::FastRead<node_t>(in);
-  auto labels = graph_internal::ReadLabels<node_t, label_t>(in, N);
+  // fastio::FastRead<node_t>(in); SKIP READING EDGES
+  auto labels = graph_internal::ReadLabels<node_t, void>(in, N);
   auto edges = graph_internal::ReadEdgeList<node_t>(in, directed, one_based, N);
-  return absl::make_unique<Graph<node_t, label_t>>(N, edges, labels);
+  return absl::make_unique<Graph<node_t, void>>(N, edges, labels);
 }
 
 template <typename node_t = uint32_t,

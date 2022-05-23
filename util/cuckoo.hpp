@@ -9,7 +9,12 @@
 
 #include <iostream>
 
+#if defined(__SSE2__) || defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #include <immintrin.h>
+#else
+#define SIMDE_ENABLE_NATIVE_ALIASES
+#include "simde/x86/avx2.h"
+#endif
 
 #include "util/serialize.hpp"
 
