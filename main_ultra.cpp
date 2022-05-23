@@ -87,8 +87,6 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         // First case: pick any combination of 3 vertices from N(S)
         // This is the binomial coefficient (|N(S)| over 3)
         diff += (neighbors * (neighbors - 1) * (neighbors - 2)) / 6; 
-        
-        // Caso 2: un nodo a distanza 1 e due a distanza 2:
 
         // Remaning three cases to pick three nodes connected to S:
         // Case 2 (denoted with 1 + 2 + 0): pick one node in N(S) and then two of its neighbors in N^2(S)
@@ -129,7 +127,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     }
                     if(unlikely(interrupted)) break;
                 }
-                // Add the possible combinations of the neighbors of u in N^2(S)
+                // Add all the possible combinations of the neighbors of u in N^2(S)
                 diff += (deg_u * (deg_u - 1)) / 2;
             }
             // Avoid the duplicates generated from line 113

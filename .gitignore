@@ -50,3 +50,11 @@
 *.nde
 
 **/bin
+
+main_deletion.cpp
+
+old_main_enhanced.cpp
+
+alg3.cpp
+
+main.cpp
