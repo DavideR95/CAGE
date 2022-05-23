@@ -260,7 +260,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
 
     // Traverse all vertices in index order
     for(auto v=0;v<size-k+1;v++) {
-        if(unlikely(interrupted)) return; // Check the timer 
+        if(unlikely(interrupted)) break; // Check the timer 
 
         std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
