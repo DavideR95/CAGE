@@ -65,13 +65,9 @@ size_t avg_n_of_s_size = 0; // Average size of N(S) throughout the recursion
 cuckoo_hash_set<node_t> inverted_N;
 
 
-/* Main recursive function
- * assumes k > 2 and S.size() <= k-2
- * (k-2 case is present in order to handle k=3) */
+/* Main recursive function */
 bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, unsigned short k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++; // Every call counts as a recursion node
-
-    // INV: S.size() <= k-2
 
     if(unlikely(interrupted)) return false; // Timer expired, stop working
 
