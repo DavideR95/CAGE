@@ -115,6 +115,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                                 else 
                                     counter_dist_1++; // These nodes will be counted two times, one from v and one from u
                             }
+                            if(unlikely(interrupted)) break;
                         }
 
                         for(auto& v : graph->neighs(neigh)) {
@@ -122,6 +123,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                                 // Here we are in N^3(S) from the viewpoint of v, neighbor of u
                                 diff++; // [1+1+1]
                             }
+                            if(unlikely(interrupted)) break;
                         }
                         
                     }
