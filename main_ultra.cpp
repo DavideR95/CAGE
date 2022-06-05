@@ -101,7 +101,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                 uint64_t deg_u = 0; // Used for 1 + 2 + 0
 
                 for(auto& neigh : graph->neighs(u)) { // Scan the neighbors of u
-                    if(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh)) {
+                    if(likely(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh))) {
                         // Here we are in N^2(S) from the viewpoint of u
                         deg_u++; // Count neighbors of u in N^2(S) [1+2+0]
 
