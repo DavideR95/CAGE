@@ -76,10 +76,9 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         return true;
     }
 
-    if(unlikely(interrupted)) return false; // Timer expired, stop working
-
     auto end = N_of_S.size(); 
     avg_n_of_s_size += end; // Used for statistical purposes 
+    if(unlikely(interrupted)) return false; // Timer expired, stop working
     if(unlikely(start == end)) { leaves++; return false; } // There are no new nodes to process, return
     bool found = false; // Has this call found any solution?
 
@@ -148,13 +147,13 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
     std::vector<node_t> S;
     S.reserve(k);
     auto size = graph->size();
-    std::cout << "---------------------------------" << std::endl;
+    // std::cout << "---------------------------------" << std::endl;
 
     // Traverse all vertices in index order
     for(auto v=0;v<size-k+1;v++) {
         if(unlikely(interrupted)) break; // Check the timer 
 
-        std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
+        // std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
         S.push_back(v); // S = {v}
 
@@ -183,7 +182,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
 
     }
 
-    std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
+    // std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
