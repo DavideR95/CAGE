@@ -19,7 +19,7 @@
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
 /* Timer 30 minutes */
-#define TIMEOUT (60 * 15) 
+#define TIMEOUT (60 * 60 * 12) 
 
 /* Check if neighbor is currently deleted from the graph */
 #define IS_DELETED(neighbor, node) (neighbor < node) 
@@ -28,7 +28,7 @@
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end()) 
 
 /* Look for elem into N via inverted_N hash table or into S with linear search */
-#define IS_IN_N_OR_S(elem) (inverted_N.count(elem) || (std::find(S.begin(), S.end(), elem) != S.end()) )
+#define IS_IN_N_OR_S(elem)  (/*std::find(N_of_S.begin(), N_of_S.end(), elem) != N_of_S.end()*/ inverted_N.count(elem) || (std::find(S.begin(), S.end(), elem) != S.end()) )
 
 /* Auxiliary function used to read input graphs */
 template <typename node_t, typename label_t>
@@ -105,6 +105,13 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                         // Here we are in N^2(S) from the viewpoint of u
                         deg_u++; // Count neighbors of u in N^2(S) [1+2+0]
 
+			for(auto& v : graph->neighs(neigh)) {
+                            if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
+                                // Here we are in N^3(S) from the viewpoint of v, neighbor of u
+                                diff++; // [1+1+1]
+                            }
+                            if(unlikely(interrupted)) break;
+                        }
                         // For case 3, we need to pick another v in N(S)
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j]; // Scan N(S) again
@@ -118,13 +125,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                             if(unlikely(interrupted)) break;
                         }
 
-                        for(auto& v : graph->neighs(neigh)) {
-                            if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
-                                // Here we are in N^3(S) from the viewpoint of v, neighbor of u
-                                diff++; // [1+1+1]
-                            }
-                            if(unlikely(interrupted)) break;
-                        }
+                        
                         
                     }
                     if(unlikely(interrupted)) break;
@@ -256,13 +257,14 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
     std::vector<node_t> S;
     S.reserve(k);
     auto size = graph->size();
-    std::cout << "---------------------------------" << std::endl;
-
+    //std::cout << "---------------------------------" << std::endl;
+    //__itt_pause();
     // Traverse all vertices in index order
     for(auto v=0;v<size-k+1;v++) {
+	
         if(unlikely(interrupted)) break; // Check the timer 
 
-        std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
+        //std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
         S.push_back(v); // S = {v}
 
@@ -277,8 +279,9 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
         }
 
         // Start the recursion from v
+	//__itt_resume();
         enumeration_ultra(S, graph, k, N_of_S, 0);
-        
+        //__itt_pause();
         // Remove v from S
         S.pop_back();
 
@@ -291,7 +294,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
 
     }
 
-    std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
+    //std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -364,7 +367,7 @@ int main(int argc, char* argv[]) {
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
 
 #if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)   
-    __itt_pause(); // For vtune profiling
+    __itt_detach(); // For vtune profiling
 #endif
 
     // Output results
