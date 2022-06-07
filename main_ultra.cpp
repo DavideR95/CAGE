@@ -155,13 +155,13 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
     std::vector<node_t> S;
     S.reserve(k);
     auto size = graph->size();
-    std::cout << "---------------------------------" << std::endl;
+    // std::cout << "---------------------------------" << std::endl;
 
     // Traverse all vertices in index order
     for(auto v=0;v<size-k+1;v++) {
         if(unlikely(interrupted)) break; // Check the timer 
 
-        std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
+        // std::cerr << "\rProcessing node " << v << "/" << size << " (degree = " << graph->degree(v) << ")..."; 
 
         S.push_back(v); // S = {v}
 
@@ -190,7 +190,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
 
     }
 
-    std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
+    // std::cerr << "Done. " << std::endl << "---------------------------------" << std::endl;
 }
 
 int main(int argc, char* argv[]) {
