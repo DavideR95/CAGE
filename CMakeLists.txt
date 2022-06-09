@@ -37,8 +37,8 @@ target_include_directories(lib PUBLIC .)
 # add_executable(alg3 alg3.cpp)
 # target_link_libraries(alg3 lib)
 
-add_executable(baseline_en main_enhanced.cpp)
-target_link_libraries(baseline_en lib)
+add_executable(KS-Simple main_enhanced.cpp)
+target_link_libraries(KS-Simple lib)
 
 # add_executable(baseline_delete main_deletion.cpp)
 # target_link_libraries(baseline_delete lib)
