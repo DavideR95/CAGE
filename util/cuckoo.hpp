@@ -250,7 +250,7 @@ class cuckoo_hash_set {
       return _mm_movemask_epi8(flag) != 0;
     }
 #else
-    if (bucket_size == 16 && sizeof(T) = 4) {
+    if (bucket_size == 16 && sizeof(T) == 4) {
       __m512i cmp = _mm512_set1_epi32(k);
       __m512i b1 = _mm512_load_epi32(&ht[bucket_size * h1]);
       __m512i b2 = _mm512_load_epi32(&ht[bucket_size * h2]);
