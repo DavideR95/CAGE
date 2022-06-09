@@ -19,7 +19,7 @@
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
 /* Timer 30 minutes */
-#define TIMEOUT (60 * 60 * 12) 
+#define TIMEOUT (60 * 1 * 15) 
 
 /* Check if neighbor is currently deleted from the graph */
 #define IS_DELETED(neighbor, node) (neighbor < node) 
@@ -114,20 +114,33 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                         node_t tmp_deg_z_cache = 0;
 			            for(auto& v : graph->neighs(neigh)) {
                             tmp_deg_z_cache++;
-                            if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
+                            //if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
+                            if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !(graph->neighs(u).count(v))) {
                                 // Here we are in N^3(S) from the viewpoint of v, neighbor of u
                                 diff++; // [1+1+1]
                             }
                             if(unlikely(interrupted)) break;
                         }
-                        deg_z_percentile[((tmp_deg_z_cache < 1000) ? tmp_deg_z_cache : 1000)]++;
+                        //deg_z_percentile[((tmp_deg_z_cache < 1000) ? tmp_deg_z_cache : 1000)]++;
                         if(tmp_deg_z_cache > max_deg_z) { max_deg_z = tmp_deg_z_cache; who_is_z = neigh; }
                         // For case 3, we need to pick another v in N(S)
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j]; // Scan N(S) again
                             if(likely(v != u && v != neigh)) { // Avoid u from N(S) and the current neighbor of u
                                 // [2+1+0]
-                                if(likely(!graph->are_neighs(neigh, v)))
+                                //if(likely(!graph->are_neighs(neigh, v)))
+                                /*if((graph->neighs(neigh).count(v) && !graph->neighs(v).count(neigh))
+                                   ||
+                                   (!graph->neighs(neigh).count(v) && graph->neighs(v).count(neigh))) {
+                                    std::cout << "==========================" << std::endl;
+                                    std::cout << "v = " << v << ", neigh = " << neigh << std::endl;
+                                    std::cout << "grado di v: " << graph->degree(v) << std::endl;
+                                    std::cout << "grado di neigh: " << graph->degree(neigh) << std::endl;
+                                    std::cout << "(v, neigh) L " << graph->neighs(v).count(neigh) << " H " << graph->are_neighs(v, neigh) << std::endl;
+                                    std::cout << "(neigh, v) L " << graph->neighs(neigh).count(v) << " H " << graph->are_neighs(neigh, v) << std::endl; 
+                                   }
+                                */
+                                if(likely(!(graph->neighs(neigh).count(v))))
                                     diff++; 
                                 else 
                                     counter_dist_1++; // These nodes will be counted two times, one from v and one from u
@@ -140,7 +153,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     }
                     if(unlikely(interrupted)) break;
                 }
-                deg_u_percentile[((tmp_deg_u_cache < 1000) ? tmp_deg_u_cache : 1000)]++;
+                //deg_u_percentile[((tmp_deg_u_cache < 1000) ? tmp_deg_u_cache : 1000)]++;
                 if(tmp_deg_u_cache > max_deg_u) { max_deg_u = tmp_deg_u_cache; who_is_u = u; }
                 // Add all the possible combinations of the neighbors of u in N^2(S)
                 diff += (deg_u * (deg_u - 1)) / 2;

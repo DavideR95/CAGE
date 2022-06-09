@@ -2,6 +2,7 @@
 #define UTIL_BINARY_SEARCH_H
 #include <cstdint>
 #include <vector>
+#include <algorithm>
 
 #include <iostream>
 
@@ -43,6 +44,8 @@ class binary_search_t {
   T operator[](size_t idx) const { return get_at(idx); }
 
   bool count(T v) const {
+    return std::binary_search(begin(), end(), v);
+
     size_t n = support.size();
     size_t cur = 0;
     while (n > 1) {
