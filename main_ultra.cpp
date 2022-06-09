@@ -64,10 +64,12 @@ size_t avg_n_of_s_size = 0; // Average size of N(S) throughout the recursion
 // Inverted index (hash table) for N(S): contains all and only nodes currently in N(S)
 cuckoo_hash_set<node_t> inverted_N;
 
-node_t deg_u_percentile[1001] = {0};
-node_t deg_z_percentile[1001] = {0};
+node_t deg_u_percentile[2001] = {0};
+node_t deg_z_percentile[2001] = {0};
+node_t n_s_percentile[2001] = {0};
 node_t max_deg_u = 0;
 node_t max_deg_z = 0;
+node_t max_n_s_size = 0;
 node_t who_is_u;
 node_t who_is_z;
 
@@ -101,6 +103,8 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
         if(likely(neighbors > 0)) { 
             uint64_t counter_dist_1 = 0; // Used for case 3
+            n_s_percentile[(end < 2000) ? end : 2000]++;
+            if(end > max_n_s_size) max_n_s_size = end;
             for(int i=start;i<end;i++) { 
                 if(unlikely(interrupted)) break;
                 auto u = N_of_S[i]; // First, pick a node from N(S), this is needed for all the three cases
@@ -121,7 +125,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                             }
                             if(unlikely(interrupted)) break;
                         }
-                        //deg_z_percentile[((tmp_deg_z_cache < 1000) ? tmp_deg_z_cache : 1000)]++;
+                        deg_z_percentile[((tmp_deg_z_cache < 1000) ? tmp_deg_z_cache : 1000)]++;
                         if(tmp_deg_z_cache > max_deg_z) { max_deg_z = tmp_deg_z_cache; who_is_z = neigh; }
                         // For case 3, we need to pick another v in N(S)
                         for(int j=start;j<end;j++) {
@@ -153,7 +157,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     }
                     if(unlikely(interrupted)) break;
                 }
-                //deg_u_percentile[((tmp_deg_u_cache < 1000) ? tmp_deg_u_cache : 1000)]++;
+                deg_u_percentile[((tmp_deg_u_cache < 1000) ? tmp_deg_u_cache : 1000)]++;
                 if(tmp_deg_u_cache > max_deg_u) { max_deg_u = tmp_deg_u_cache; who_is_u = u; }
                 // Add all the possible combinations of the neighbors of u in N^2(S)
                 diff += (deg_u * (deg_u - 1)) / 2;
@@ -408,18 +412,53 @@ int main(int argc, char* argv[]) {
     std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
     std::cout << "Avg |N(S)|: " << avg_n_of_s_size / recursion_nodes << std::endl;
 
-    std::cout << "Frequenze per N(u): " << std::endl;
-    for(auto i=0;i<1001;i++) {
+    std::cout << "Mediana di N(u): "; // << std::endl;
+    uint64_t sum = 0;
+    for(auto i=0;i<2001;i++) {
+        sum += deg_u_percentile[i];
+    }
+    uint64_t tmp_sum = 0;
+    size_t i = 0; 
+    while(tmp_sum < sum/2) {
+        tmp_sum += deg_u_percentile[i++];
+    }
+    std::cout << i-1 << std::endl;
+
+    std::cout << "Mediana di N(z): "; // << std::endl;
+    sum = 0;
+    for(auto i=0;i<2001;i++) {
+        sum += deg_z_percentile[i];
+    }
+    tmp_sum = 0;
+    i = 0; 
+    while(tmp_sum < sum/2) {
+        tmp_sum += deg_z_percentile[i++];
+    }
+    std::cout << i-1 << std::endl;
+
+    std::cout << "Mediana di N(S): "; // << std::endl;
+    sum = 0;
+    for(auto i=0;i<2001;i++) {
+        sum += n_s_percentile[i];
+    }
+    tmp_sum = 0;
+    i = 0; 
+    while(tmp_sum < sum/2) {
+        tmp_sum += n_s_percentile[i++];
+    }
+    std::cout << i-1 << std::endl;
+
+    /* 
         if(deg_u_percentile[i] > 0) {
             std::cout << i << ": " << deg_u_percentile[i] << std::endl;
         }
     }
     std::cout << "Frequenze per N(z): " << std::endl;
-    for(auto i=0;i<1001;i++) {
+    for(auto i=0;i<2001;i++) {
         if(deg_z_percentile[i] > 0) {
             std::cout << "\t" << i << ": " << deg_z_percentile[i] << std::endl;
         }
-    }
+    } */
 
     return (interrupted ? 14 : 0);
 }
