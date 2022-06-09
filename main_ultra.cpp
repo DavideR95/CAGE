@@ -64,6 +64,12 @@ size_t avg_n_of_s_size = 0; // Average size of N(S) throughout the recursion
 // Inverted index (hash table) for N(S): contains all and only nodes currently in N(S)
 cuckoo_hash_set<node_t> inverted_N;
 
+node_t deg_u_percentile[1001] = {0};
+node_t deg_z_percentile[1001] = {0};
+node_t max_deg_u = 0;
+node_t max_deg_z = 0;
+node_t who_is_u;
+node_t who_is_z;
 
 /* Main recursive function
  * assumes k > 2 and S.size() <= k-2
@@ -99,19 +105,23 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                 if(unlikely(interrupted)) break;
                 auto u = N_of_S[i]; // First, pick a node from N(S), this is needed for all the three cases
                 uint64_t deg_u = 0; // Used for 1 + 2 + 0
-
+                node_t tmp_deg_u_cache = 0;
                 for(auto& neigh : graph->neighs(u)) { // Scan the neighbors of u
+                    tmp_deg_u_cache++;
                     if(likely(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh))) {
                         // Here we are in N^2(S) from the viewpoint of u
                         deg_u++; // Count neighbors of u in N^2(S) [1+2+0]
-
-			for(auto& v : graph->neighs(neigh)) {
+                        node_t tmp_deg_z_cache = 0;
+			            for(auto& v : graph->neighs(neigh)) {
+                            tmp_deg_z_cache++;
                             if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
                                 // Here we are in N^3(S) from the viewpoint of v, neighbor of u
                                 diff++; // [1+1+1]
                             }
                             if(unlikely(interrupted)) break;
                         }
+                        deg_z_percentile[((tmp_deg_z_cache < 1000) ? tmp_deg_z_cache : 1000)]++;
+                        if(tmp_deg_z_cache > max_deg_z) { max_deg_z = tmp_deg_z_cache; who_is_z = neigh; }
                         // For case 3, we need to pick another v in N(S)
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j]; // Scan N(S) again
@@ -130,6 +140,8 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     }
                     if(unlikely(interrupted)) break;
                 }
+                deg_u_percentile[((tmp_deg_u_cache < 1000) ? tmp_deg_u_cache : 1000)]++;
+                if(tmp_deg_u_cache > max_deg_u) { max_deg_u = tmp_deg_u_cache; who_is_u = u; }
                 // Add all the possible combinations of the neighbors of u in N^2(S)
                 diff += (deg_u * (deg_u - 1)) / 2;
             }
@@ -382,6 +394,19 @@ int main(int argc, char* argv[]) {
     std::cout << "Min sol. per leaf: " << min_sol_per_leaf << " ( " << count_min_leaf << " times )" << std::endl;
     std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
     std::cout << "Avg |N(S)|: " << avg_n_of_s_size / recursion_nodes << std::endl;
+
+    std::cout << "Frequenze per N(u): " << std::endl;
+    for(auto i=0;i<1001;i++) {
+        if(deg_u_percentile[i] > 0) {
+            std::cout << i << ": " << deg_u_percentile[i] << std::endl;
+        }
+    }
+    std::cout << "Frequenze per N(z): " << std::endl;
+    for(auto i=0;i<1001;i++) {
+        if(deg_z_percentile[i] > 0) {
+            std::cout << "\t" << i << ": " << deg_z_percentile[i] << std::endl;
+        }
+    }
 
     return (interrupted ? 14 : 0);
 }
