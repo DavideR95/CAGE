@@ -1,0 +1,27 @@
+# CAGE: Cache-Aware Graphlet Enumeration
+
+## Building
+Make sure you have the `cmake` version >= 3.5 and `make` utilities installed.
+Then, issue these commands:
+```mkdir build
+cd build
+cmake ..
+make -j CAGE```
+
+The executable file CAGE will be created in the `build` directory. 
+
+## Usage
+
+You can run CAGE using
+```./CAGE <path_to_input_graph> <k> [edge list format]```
+
+The last parameter is optional and if specified will cause the program to interpret the input file in the edge list format (see below).
+
+## Graph Format
+The main graph format used is as follows:
+First row should contain the number of vertices n.
+Then, n rows with `index degree` (separated by a space) with the degrees of each vertex.
+Then the edge list of the graph, one edge per row `u v`.
+
+If the third parameter is passed on the command line, then only the edge list may be supplied.
+Vertex indices should start from 0.
