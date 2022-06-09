@@ -12,10 +12,11 @@
 #include <immintrin.h>
 #else
 #define SIMDE_ENABLE_NATIVE_ALIASES
-#include "simde/x86/avx2.h"
+#include "simde/x86/avx512.h"
 #endif
 #include "util/serialize.hpp"
 
+#define __KNC__
 template <typename T, T missing = T(-1),
 #ifdef __KNC__
           int bucket_size = 64 / sizeof(T)
