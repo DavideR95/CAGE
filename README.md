@@ -10,6 +10,7 @@ See the paper "CAGE: Cache-Aware Graphlet Enumeration" for more details on these
 
 ## Building
 Make sure you have the `cmake` version >= 3.5 and `make` utilities installed.
+Note: you need an Intel processor compatible with (at least) AVX2.
 
 After choosing the algorithm variant, issue these commands:
 ```bash
