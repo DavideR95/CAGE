@@ -28,5 +28,5 @@ add_library(
 target_link_libraries(lib PUBLIC absl::strings absl::memory absl::span)
 target_include_directories(lib PUBLIC .)
 
-add_executable(CAGE main_ultra.cpp)
+add_executable(CAGE main.cpp)
 target_link_libraries(CAGE lib) # include also libittnotify.a dl pthread to use with vtune
