@@ -8,15 +8,14 @@
 #include <vector>
 
 #include <iostream>
-#if defined(__SSE2__) || defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+//#if defined(__SSE2__) || defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
 #include <immintrin.h>
-#else
+/*#else
 #define SIMDE_ENABLE_NATIVE_ALIASES
-#include "simde/x86/avx512.h"
-#endif
+#include "simde/x86/avx2.h"
+#endif*/
 #include "util/serialize.hpp"
 
-#define __KNC__
 template <typename T, T missing = T(-1),
 #ifdef __KNC__
           int bucket_size = 64 / sizeof(T)
