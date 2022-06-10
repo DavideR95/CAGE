@@ -9,8 +9,27 @@
 #include "util/graph.hpp"
 #include "permute/permute.hpp"
 
+// Uncomment the defines below to choose which algorithm to run
+#define CAGE_3
+// #define CAGE_2
+// #define CAGE_1
+// #define KS_SIMPLE
+
+// If no algorithm specified, use CAGE-3
+#if !defined(CAGE_3) && !defined(CAGE_2) && !defined(CAGE_1) && !defined(KS_SIMPLE)
+#define CAGE_3
+#endif
+
+// Uncomment this define to compute stats for N(S), N(u) and N(z)
+// Note: this will negatively impact the cache performance
+
+// #define STATS_ENABLED
+
+// Uncomment the following define to compile the code for vtune analysis
+// #define VTUNE
+
 // Used for vtune code profiling
-#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+#if defined(VTUNE) && (defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)) 
 #include "/opt/intel/oneapi/vtune/latest/sdk/include/ittnotify.h"
 #endif
 
@@ -18,8 +37,12 @@
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
-/* Timer 30 minutes */
-#define TIMEOUT (60 * 1 * 15) 
+/* Timer 12 hours without vtune, or 15 minutes for vtune */
+#ifndef VTUNE
+#define TIMEOUT (60 * 60 * 12) 
+#else
+#define TIMEOUT (60 * 15)
+#endif
 
 /* Check if neighbor is currently deleted from the graph */
 #define IS_DELETED(neighbor, node) (neighbor < node) 
@@ -28,7 +51,7 @@
 #define IN_ARRAY(elem, arr) (std::find(arr.begin(), arr.end(), elem) != arr.end()) 
 
 /* Look for elem into N via inverted_N hash table or into S with linear search */
-#define IS_IN_N_OR_S(elem)  (/*std::find(N_of_S.begin(), N_of_S.end(), elem) != N_of_S.end()*/ inverted_N.count(elem) || (std::find(S.begin(), S.end(), elem) != S.end()) )
+#define IS_IN_N_OR_S(elem)  (inverted_N.count(elem) || (std::find(S.begin(), S.end(), elem) != S.end()) )
 
 /* Auxiliary function used to read input graphs */
 template <typename node_t, typename label_t>
@@ -64,6 +87,7 @@ size_t avg_n_of_s_size = 0; // Average size of N(S) throughout the recursion
 // Inverted index (hash table) for N(S): contains all and only nodes currently in N(S)
 cuckoo_hash_set<node_t> inverted_N;
 
+#ifdef STATS_ENABLED
 node_t deg_u_percentile[2001] = {0};
 node_t deg_z_percentile[2001] = {0};
 node_t n_s_percentile[2001] = {0};
@@ -72,14 +96,11 @@ node_t max_deg_z = 0;
 node_t max_n_s_size = 0;
 node_t who_is_u;
 node_t who_is_z;
+#endif
 
-/* Main recursive function
- * assumes k > 2 and S.size() <= k-2
- * (k-2 case is present in order to handle k=3) */
+/* Main recursive function */
 bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph, unsigned short k, std::vector<node_t>& N_of_S, int start) {
     recursion_nodes++; // Every call counts as a recursion node
-
-    // INV: S.size() <= k-2
 
     if(unlikely(interrupted)) return false; // Timer expired, stop working
 
@@ -87,7 +108,7 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
     avg_n_of_s_size += end; // Used for statistical purposes 
     if(unlikely(start == end)) { leaves++; return false; } // There are no new nodes to process, return
     bool found = false; // Has this call found any solution?
-
+    #ifdef CAGE_3
     if(S.size() == k-3) {
         uint64_t diff = 0;
         auto neighbors = end - start; // |N(S)|
@@ -103,51 +124,53 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
 
         if(likely(neighbors > 0)) { 
             uint64_t counter_dist_1 = 0; // Used for case 3
+            #ifdef STATS_ENABLED
             n_s_percentile[(end < 2000) ? end : 2000]++;
             if(end > max_n_s_size) max_n_s_size = end;
+            #endif
             for(int i=start;i<end;i++) { 
-                if(unlikely(interrupted)) break;
+                if(unlikely(interrupted)) break; // Timeout check
                 auto u = N_of_S[i]; // First, pick a node from N(S), this is needed for all the three cases
                 uint64_t deg_u = 0; // Used for 1 + 2 + 0
+                #ifdef STATS_ENABLED
                 node_t tmp_deg_u_cache = 0;
+                #endif
                 for(auto& neigh : graph->neighs(u)) { // Scan the neighbors of u
+                    #ifdef STATS_ENABLED
                     tmp_deg_u_cache++;
+                    #endif
                     if(likely(!IS_DELETED(neigh, S.front()) && !IS_IN_N_OR_S(neigh))) {
                         // Here we are in N^2(S) from the viewpoint of u
                         deg_u++; // Count neighbors of u in N^2(S) [1+2+0]
+                        #ifdef STATS_ENABLED
                         node_t tmp_deg_z_cache = 0;
+                        #endif
 			            for(auto& v : graph->neighs(neigh)) {
+                            #ifdef STATS_ENABLED
                             tmp_deg_z_cache++;
-                            //if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) {
-                            if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !(graph->neighs(u).count(v))) {
+                            #endif
+                            if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !graph->are_neighs(u, v)) { // Cuckoo Hash
+                            // if(!IS_DELETED(v, S.front()) && !IS_IN_N_OR_S(v) && !(graph->neighs(u).count(v))) { // Binary Search
                                 // Here we are in N^3(S) from the viewpoint of v, neighbor of u
                                 diff++; // [1+1+1]
                             }
                             if(unlikely(interrupted)) break;
                         }
+                        #ifdef STATS_ENABLED
                         deg_z_percentile[((tmp_deg_z_cache < 1000) ? tmp_deg_z_cache : 1000)]++;
                         if(tmp_deg_z_cache > max_deg_z) { max_deg_z = tmp_deg_z_cache; who_is_z = neigh; }
+                        #endif
                         // For case 3, we need to pick another v in N(S)
                         for(int j=start;j<end;j++) {
                             auto v = N_of_S[j]; // Scan N(S) again
                             if(likely(v != u && v != neigh)) { // Avoid u from N(S) and the current neighbor of u
                                 // [2+1+0]
-                                //if(likely(!graph->are_neighs(neigh, v)))
-                                /*if((graph->neighs(neigh).count(v) && !graph->neighs(v).count(neigh))
-                                   ||
-                                   (!graph->neighs(neigh).count(v) && graph->neighs(v).count(neigh))) {
-                                    std::cout << "==========================" << std::endl;
-                                    std::cout << "v = " << v << ", neigh = " << neigh << std::endl;
-                                    std::cout << "grado di v: " << graph->degree(v) << std::endl;
-                                    std::cout << "grado di neigh: " << graph->degree(neigh) << std::endl;
-                                    std::cout << "(v, neigh) L " << graph->neighs(v).count(neigh) << " H " << graph->are_neighs(v, neigh) << std::endl;
-                                    std::cout << "(neigh, v) L " << graph->neighs(neigh).count(v) << " H " << graph->are_neighs(neigh, v) << std::endl; 
-                                   }
-                                */
-                                if(likely(!(graph->neighs(neigh).count(v))))
+                                if(likely(!graph->are_neighs(neigh, v))) { // Cuckoo Hash
+                                // if(likely(!(graph->neighs(neigh).count(v)))) { // Binary Search
                                     diff++; 
-                                else 
+                                } else {
                                     counter_dist_1++; // These nodes will be counted two times, one from v and one from u
+                                }
                             }
                             if(unlikely(interrupted)) break;
                         }
@@ -157,8 +180,10 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
                     }
                     if(unlikely(interrupted)) break;
                 }
+                #ifdef STATS_ENABLED
                 deg_u_percentile[((tmp_deg_u_cache < 1000) ? tmp_deg_u_cache : 1000)]++;
                 if(tmp_deg_u_cache > max_deg_u) { max_deg_u = tmp_deg_u_cache; who_is_u = u; }
+                #endif 
                 // Add all the possible combinations of the neighbors of u in N^2(S)
                 diff += (deg_u * (deg_u - 1)) / 2;
             }
@@ -180,7 +205,10 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(diff > 0) fruitful_leaves++;
         return (diff > 0);
     }
-    else if(unlikely(S.size() == k-2)) { // This is just a fallback for k = 3
+    else 
+    #endif
+    #if defined(CAGE_3) || defined (CAGE_2)
+    if(unlikely(S.size() == k-2)) { // This is just a fallback for k = 3
         auto neighbors = N_of_S.size() - start; // |N(S)|
         uint64_t diff = 0;
 
@@ -220,7 +248,30 @@ bool enumeration_ultra(std::vector<node_t>& S, fast_graph_t<node_t, void>* graph
         if(diff > 0) fruitful_leaves++; // If this node found any solution, then it is a fruitful leaf
         return (diff > 0);
     } 
+    #endif
+    #ifdef CAGE_1
+    if(S.size() == k-1) {
+        uint64_t diff = end-start;
+        solutions += diff; // Update the number of solutions found
+        // Update statistics
+        if(diff > 0 && diff < min_sol_per_leaf) { min_sol_per_leaf = diff; count_min_leaf = 1; }
+        else if(diff == min_sol_per_leaf) count_min_leaf++;
+        if(diff > max_sol_per_leaf) { max_sol_per_leaf = diff; count_max_leaf = 1; }
+        else if(diff == max_sol_per_leaf) count_max_leaf++;
 
+        leaves++; // This is a leaf node in the recursion tree
+        if(diff > 0) fruitful_leaves++; // If this node found any solution, then it is a fruitful leaf
+        return (diff > 0);
+    }
+    #endif
+    #ifdef KS_SIMPLE
+    if(S.size() == k) {
+        solutions++;
+        leaves++;
+        fruitful_leaves++;
+        return true;
+    }
+    #endif
     bool im_a_parent = false; // Used to check if this is a dead leaf
 
     // Recursive part: take each node from N(S), one at a time and add it to S
@@ -287,7 +338,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
     S.reserve(k);
     auto size = graph->size();
     //std::cout << "---------------------------------" << std::endl;
-    //__itt_pause();
+
     // Traverse all vertices in index order
     for(auto v=0;v<size-k+1;v++) {
 	
@@ -308,9 +359,9 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
         }
 
         // Start the recursion from v
-	//__itt_resume();
+
         enumeration_ultra(S, graph, k, N_of_S, 0);
-        //__itt_pause();
+
         // Remove v from S
         S.pop_back();
 
@@ -328,7 +379,7 @@ void main_loop(fast_graph_t<node_t, void>* graph, unsigned short k, size_t max_d
 
 int main(int argc, char* argv[]) {
     // Used for vtune code profiling
-#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+#if defined(VTUNE) && (defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)) 
     __itt_pause();
 #endif
     bool is_nde = true; // Input format
@@ -343,7 +394,7 @@ int main(int argc, char* argv[]) {
             is_nde = false;
             break;
         default: 
-            std::cerr << "Usage: " << argv[0] << " <graph_file.nde> <k> [Skip Printing Graph Info]" << std::endl;
+            std::cerr << "Usage: " << argv[0] << " <input/graph/path> <k> [use edge list only format]" << std::endl;
             return 1;
     }
     
@@ -358,7 +409,6 @@ int main(int argc, char* argv[]) {
         edges += graph->degree(i);
         if(graph->degree(i) > max_degree) max_degree = graph->degree(i);
         if(graph->fwd_degree(i) > deg) deg = graph->fwd_degree(i);
-        // current_degree[i] = graph->degree(i);
     }
 
     edges /= 2; // Undirected graph
@@ -384,7 +434,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Max degree: " << max_degree << " avg. degree: " << edges/graph->size() << " degeneracy: " << deg << std::endl;
     std::cerr << "Starting the computation... use CTRL-C to manually stop or wait for the timeout (";
     std::cerr << TIMEOUT << "s)." << std::endl;
-#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)
+
+#if defined(VTUNE) && (defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)) 
     __itt_resume(); // For vtune profiling
 #endif
 
@@ -395,7 +446,7 @@ int main(int argc, char* argv[]) {
 
     auto elapsed = std::chrono::high_resolution_clock::now() - start;
 
-#if defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)   
+#if defined(VTUNE) && (defined(__INTEL_COMPILER) || defined(__INTEL_LLVM_COMPILER)) 
     __itt_detach(); // For vtune profiling
 #endif
 
@@ -403,7 +454,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Found " << solutions << " graphlets of size " << k;
     std::cout << " in " << std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count()/1000. << " s" << std::endl;
     std::cout << "Recursion nodes - rec. leaves: " << recursion_nodes << " - " << leaves << " = " << recursion_nodes-leaves << std::endl;
-    //std::cerr << "Solutions per sec: " << counter / std::chrono::duration_cast<std::chrono::milliseconds>(elapsed).count() * 1000 << std::endl;
     std::cout << "Leaves: " << leaves << " fruitful leaves: " << fruitful_leaves << " dead leaves: " << (leaves-fruitful_leaves);
     std::cout << " ( " << (double) (leaves-fruitful_leaves)/leaves * 100. << " % )" << std::endl;
     std::cout << "Graphlets/leaves ratio: " << (double) solutions / leaves << std::endl;
@@ -412,7 +462,8 @@ int main(int argc, char* argv[]) {
     std::cout << "Max sol. per leaf: " << max_sol_per_leaf << " ( " << count_max_leaf << " times )"<< std::endl;
     std::cout << "Avg |N(S)|: " << avg_n_of_s_size / recursion_nodes << std::endl;
 
-    std::cout << "Mediana di N(u): "; // << std::endl;
+#ifdef STATS_ENABLED
+    std::cout << "Median for N(u): "; 
     uint64_t sum = 0;
     for(auto i=0;i<2001;i++) {
         sum += deg_u_percentile[i];
@@ -424,7 +475,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << i-1 << std::endl;
 
-    std::cout << "Mediana di N(z): "; // << std::endl;
+    std::cout << "Median for N(z): ";
     sum = 0;
     for(auto i=0;i<2001;i++) {
         sum += deg_z_percentile[i];
@@ -436,7 +487,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << i-1 << std::endl;
 
-    std::cout << "Mediana di N(S): "; // << std::endl;
+    std::cout << "Median for N(S): "; 
     sum = 0;
     for(auto i=0;i<2001;i++) {
         sum += n_s_percentile[i];
@@ -447,18 +498,8 @@ int main(int argc, char* argv[]) {
         tmp_sum += n_s_percentile[i++];
     }
     std::cout << i-1 << std::endl;
+#endif
 
-    /* 
-        if(deg_u_percentile[i] > 0) {
-            std::cout << i << ": " << deg_u_percentile[i] << std::endl;
-        }
-    }
-    std::cout << "Frequenze per N(z): " << std::endl;
-    for(auto i=0;i<2001;i++) {
-        if(deg_z_percentile[i] > 0) {
-            std::cout << "\t" << i << ": " << deg_z_percentile[i] << std::endl;
-        }
-    } */
+    return (interrupted ? 14 : 0); // Exit status will be 14 if the timeout occurred during execution
 
-    return (interrupted ? 14 : 0);
 }

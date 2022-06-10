@@ -285,7 +285,6 @@ class cuckoo_hash_set {
       if (ht[h1 * bucket_size + pos] == k) {
         ht[h1 * bucket_size + pos] = missing;
         sz--;
-        //std::cout << "Cancellato " << k << std::endl;
         return;
       }
     int h2 = hash_2(k);
@@ -293,7 +292,6 @@ class cuckoo_hash_set {
       if (ht[h2 * bucket_size + pos] == k) {
         ht[h2 * bucket_size + pos] = missing;
         sz--;
-        //std::cout << "Cancellato " << k << std::endl;
         return;
       }
   }

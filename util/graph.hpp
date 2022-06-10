@@ -115,18 +115,9 @@ extern template class label_array_t<uint64_t, uint32_t>;
 extern template class label_array_t<uint64_t, uint64_t>;
 }  // namespace graph_internal
 
-template <typename index_t = uint32_t>
-struct cplx_graph_node {
-  index_t index;
-  // bool in_S;
-  bool in_N;
-  // bool deleted;
-};
-
 template <typename node_t_ = uint32_t, typename label_t = void>
 class graph_t {
  public:
-  // TODO(veluca): switch to CSR format?
   using node_t = node_t_;
   using edges_t = std::vector<std::vector<node_t>>;
   using labels_t = graph_internal::label_array_t<node_t, label_t>;
@@ -135,33 +126,11 @@ class graph_t {
   graph_t() {}  // For deserialization
 
   graph_t(node_t N, const edges_t& edg, const labels_t& lbl)
-      : N_(N), edges_(N), /*nodes_(N),*/ labels_(lbl) {
+      : N_(N), edges_(N), labels_(lbl) {
     for (node_t i = 0; i < N; i++) {
       edges_[i].init(edg[i]);
-      // nodes_[i].index = i;
-      // nodes_[i].in_S = false;
-      // nodes_[i].in_N = false;
-      // nodes_[i].deleted = false;
     }
   }
-
-  // bool is_in_S(node_t node) const { return nodes_[node].in_S; }
-
-  // bool is_in_N(node_t node) const { return nodes_[node].in_N; }
-
-  // bool is_deleted(node_t node) const { return nodes_[node].deleted; }
-
-  // void delete_node(node_t node) { nodes_[node].deleted = true; }
-
-  // void restore_node(node_t node) { nodes_[node].deleted = false; }
-
-  // void put_in_S(node_t node) { nodes_[node].in_S = true; }
-
-  // void remove_from_S(node_t node) { nodes_[node].in_S = false; }
-
-  // void put_in_N(node_t node) { nodes_[node].in_N = true; }
-
-  // void remove_from_N(node_t node) { nodes_[node].in_N = false; } 
 
   node_t size() const { return N_; }
   label_t label(node_t i) const { return labels_.at(i); }
@@ -220,130 +189,9 @@ class graph_t {
 
  protected:
   node_t N_;
-  // std::vector<cplx_graph_node<node_t>> nodes_;
   std::vector<binary_search_t<node_t>> edges_;
   labels_t labels_;
 };
-
-
-
-template <typename node_t_ = uint32_t, typename label_t = void>
-class unsorted_graph_t {
- public:
-  using node_t = node_t_;
-  using edges_t = std::vector<std::vector<node_t>>;
-  using labels_t = graph_internal::label_array_t<node_t, label_t>;
-  using Builder = std::function<std::unique_ptr<unsorted_graph_t>(node_t, const edges_t&,
-                                                         const labels_t&)>;
-  unsorted_graph_t() {}  // For deserialization
-
-  unsorted_graph_t(node_t N, const edges_t& edg, const labels_t& lbl)
-      : N_(N), edges_(N), labels_(lbl), deleted(N) { // Inizializza i vettori con la giusta lunghezza
-    for (node_t i = 0; i < N; i++) {
-      edges_[i].init(edg[i]);
-    }
-  }
-
-  node_t size() const { return N_; }
-  label_t label(node_t i) const { return labels_.at(i); }
-  node_t degree(node_t i) const { return edges_[i].size(); }
-  node_t fwd_degree(node_t n) const { return fwd_neighs(n).size(); }
-  const linear_search_t<node_t>& neighs(node_t i) const { return edges_[i]; }
-
-  
-
-  const absl::Span<const node_t> fwd_neighs(node_t n) const {
-    auto beg = edges_[n].upper_bound(n);
-    auto end = edges_[n].end();
-    return absl::Span<const node_t>(beg, end - beg);
-  }
-
-  bool are_neighs(node_t a, node_t b) const { return edges_[a].count(b); }
-
-  void delete_node(node_t v) {
-    /*if(v == 0) {
-      for(auto& neigh : neighs(v)) { 
-        std::cerr << "Vicino di 0: " << neigh << std::endl;
-      }
-    }*/
-    //std::cerr << "Cancello " << v << "..." << std::endl;
-    if(deleted[v]) exit(-1);
-    deleted[v] = true;
-    for(auto& neigh : neighs(v)) {
-      //if(v == 2) std::cerr << "Io sono il vicino " << neigh << std::endl;
-      //std::cerr << "Per " << v << " ??? " << std::endl;
-      edges_[neigh].delete_item(v);
-      /*if(v == 2) { std::cerr << "E la mia nuova lista è (" << edges_[neigh].get_max_index() << ") ";
-        for(auto& u : edges_[neigh])
-          std::cerr << u << " ";
-        std::cerr << std::endl;
-      }*/
-    }
-    //if(v == 0) std::cerr << "Ok finito " << std::endl;
-    //std::cerr << "Fine per " << v << std::endl;
-  }
-
-  void restore_node(node_t v) {
-    for(auto& neigh : neighs(v)) {
-      //if(v == 1) std::cerr << "[rev] io sono il vicino " << neigh << " di 1 " << std::endl;
-      edges_[neigh].revert_item(v);
-    }
-    deleted[v] = false;
-    //std::cerr << "Revertato " << v << "..." << std::endl;
-  }
-
-  /**
-   *  Node new_order[i] will go in position i.
-   */
-  std::unique_ptr<unsorted_graph_t> Permute(const std::vector<node_t>& new_order) const {
-    std::vector<node_t> new_pos(size(), -1);
-    for (node_t i = 0; i < size(); i++) new_pos[new_order[i]] = i;
-    edges_t new_edges(size());
-    for (node_t i = 0; i < size(); i++) {
-      for (node_t x : neighs(i)) {
-        new_edges[new_pos[i]].push_back(new_pos[x]);
-      }
-      std::sort(new_edges[new_pos[i]].begin(), new_edges[new_pos[i]].end());
-    }
-    return absl::make_unique<unsorted_graph_t>(size(), new_edges,
-                                      labels_.Permute(new_order));
-  }
-
-  std::unique_ptr<unsorted_graph_t> Clone() const {
-    std::vector<node_t> identity(size());
-    std::iota(identity.begin(), identity.end(), 0);
-    return Permute(identity);
-  }
-
-  unsorted_graph_t(const unsorted_graph_t&) = delete;
-  unsorted_graph_t(unsorted_graph_t&&) noexcept = default;
-  unsorted_graph_t& operator=(const unsorted_graph_t&) = delete;
-  unsorted_graph_t& operator=(unsorted_graph_t&&) = delete;
-  virtual ~unsorted_graph_t() = default;
-
-  void Serialize(std::vector<size_t>* out) const {
-    ::Serialize(N_, out);
-    ::Serialize(edges_, out);
-    ::Serialize(labels_, out);
-  }
-
-  void Deserialize(const size_t** in) {
-    ::Deserialize(in, &N_);
-    ::Deserialize(in, &edges_);
-    ::Deserialize(in, &labels_);
-  }
-
- protected:
-  node_t N_;
-  std::vector<linear_search_t<node_t>> edges_;
-  labels_t labels_;
-  std::vector<bool> deleted;
-};
-
-
-
-
-
 
 template <typename node_t_ = uint32_t, typename label_t = void>
 class fast_graph_t : public graph_t<node_t_, label_t> {
@@ -371,7 +219,8 @@ class fast_graph_t : public graph_t<node_t_, label_t> {
     return absl::Span<const node_t>(beg, end - beg);
   }
 
-  const cuckoo_hash_set<node_t>& neighs(node_t i) const { return edges_[i]; }
+  // If this is uncommented, CAGE will loop over the hash table rather than the "pure" adjacency list
+  //const cuckoo_hash_set<node_t>& neighs(node_t i) const { return edges_[i]; }
   bool are_neighs(node_t a, node_t b) const { return edges_[a].count(b); }
   size_t get_rehashes() { 
     size_t total = 0;
@@ -417,23 +266,18 @@ class fast_graph_t : public graph_t<node_t_, label_t> {
   }
 
   void delete_node(node_t v) {
-    //if(v == 0) { std::cout << "I vicini che cancello sono: " << deleted_[v].size() << " e " << edges_[v].size() << " "; }
     for(auto& neigh : edges_[v]) {
-      //if(v == 0) std::cout << neigh << " ";
       edges_[neigh].erase(v);
       deleted_[neigh].insert(v);
     }
-    //if(v == 0) std::cout << std::endl;
     for(auto& u : deleted_[v]) {
-      //if(v == 0) std::cout << u << " ";
       edges_[u].erase(v);
       deleted_[u].insert(v);
     }
-    //if(v == 0) { for(auto& neigh : edges_[996]) std::cout << "Ora un vicino di 996 è: " << neigh << "\n";}
+
   }
 
   void restore_node(node_t v) {
-    //std::cerr << "AAAA";
     for(auto& neigh : edges_[v]) {
       edges_[neigh].insert(v);
       deleted_[neigh].erase(v);
@@ -487,17 +331,6 @@ extern template class graph_t<uint64_t, int32_t>;
 extern template class graph_t<uint64_t, int64_t>;
 extern template class graph_t<uint64_t, uint32_t>;
 extern template class graph_t<uint64_t, uint64_t>;
-
-/*extern template class unsorted_graph_t<uint32_t, void>;
-extern template class unsorted_graph_t<uint32_t, int32_t>;
-extern template class unsorted_graph_t<uint32_t, int64_t>;
-extern template class unsorted_graph_t<uint32_t, uint32_t>;
-extern template class unsorted_graph_t<uint32_t, uint64_t>;
-extern template class unsorted_graph_t<uint64_t, void>;
-extern template class unsorted_graph_t<uint64_t, int32_t>;
-extern template class unsorted_graph_t<uint64_t, int64_t>;
-extern template class unsorted_graph_t<uint64_t, uint32_t>;
-extern template class unsorted_graph_t<uint64_t, uint64_t>;*/
 
 extern template class fast_graph_t<uint32_t, void>;
 extern template class fast_graph_t<uint32_t, int32_t>;
